@@ -6,13 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Truck Truck | Dashboard</title>
     <!-- Google Font -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="{{ asset('lte/plugins/fontawesome-free/css/all.min.css') }}">
     <!-- Ionicons -->
     <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
     <!-- Tempusdominus Bootstrap 4 -->
-    <link rel="stylesheet" href="{{ asset('lte/plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css') }}">
+    <link rel="stylesheet"
+        href="{{ asset('lte/plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css') }}">
     <!-- iCheck -->
     <link rel="stylesheet" href="{{ asset('lte/plugins/icheck-bootstrap/icheck-bootstrap.min.css') }}">
     <!-- JQVMap -->
@@ -59,24 +61,27 @@
 
         .navbar {
             background-color: #6DC5D1;
-            
+
         }
 
-        .gps-section{
+        .gps-section {
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
             background: #fff;
             margin-bottom: 20px;
-            text-align: left; /* Menambahkan ini agar konten di dalamnya di tengah */
+            text-align: left;
+            /* Menambahkan ini agar konten di dalamnya di tengah */
         }
+
         .fuel-container {
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
             background: #fff;
             margin-bottom: 20px;
-            text-align: center; /* Menambahkan ini agar konten di dalamnya di tengah */
+            text-align: center;
+            /* Menambahkan ini agar konten di dalamnya di tengah */
         }
 
         #map {
@@ -175,6 +180,19 @@
         .main-sidebar:hover {
             width: 250px;
         }
+
+        /* CSS styles for percentage color based on fuel level */
+        .low-fuel {
+            color: red;
+        }
+
+        .medium-fuel {
+            color: orange;
+        }
+
+        .high-fuel {
+            color: green;
+        }
     </style>
 </head>
 
@@ -182,7 +200,8 @@
     <div class="wrapper">
         <!-- Preloader -->
         <div class="preloader flex-column justify-content-center align-items-center">
-            <img class="animation__shake" src="{{ asset('images/trucking.jpg') }}" alt="Track-Truck" height="60" width="60">
+            <img class="animation__shake" src="{{ asset('images/trucking.jpg') }}" alt="Track-Truck" height="60"
+                width="60">
         </div>
 
         <!-- Navbar -->
@@ -190,7 +209,8 @@
             <!-- Left navbar links -->
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i
+                            class="fas fa-bars"></i></a>
                 </li>
                 <li class="nav-item d-none d-sm-inline-block">
                     <a href="/" class="nav-link">Home</a>
@@ -201,18 +221,19 @@
             <ul class="navbar-nav ml-auto">
                 <!-- Authentication Links -->
                 @if (Auth::check())
-                <li class="nav-item">
-                    <span class="welcome-message">Welcome, {{ Auth::user()->name }}!</span>
-                </li>
+                    <li class="nav-item">
+                        <span class="welcome-message">Welcome, {{ Auth::user()->name }}!</span>
+                    </li>
                 @else
-                <li class="nav-item">
-                    <span class="welcome-message">Welcome, Guest!</span>
-                </li>
+                    <li class="nav-item">
+                        <span class="welcome-message">Welcome, Guest!</span>
+                    </li>
                 @endif
                 <li class="nav-item">
                     <form action="{{ route('logout') }}" method="post">
                         @csrf
-                        <button type="submit" class="btn btn-link nav-link" style="font-weight: bold; color: white;">Logout</button>
+                        <button type="submit" class="btn btn-link nav-link"
+                            style="font-weight: bold; color: white;">Logout</button>
                     </form>
                 </li>
             </ul>
@@ -223,7 +244,8 @@
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <!-- Brand Logo -->
             <a href="index3.html" class="brand-link">
-                <img src="{{ asset('images/trucking.jpg') }}" alt="Track Truck" class="brand-image img-circle elevation-3" style="opacity: .8">
+                <img src="{{ asset('images/trucking.jpg') }}" alt="Track Truck"
+                    class="brand-image img-circle elevation-3" style="opacity: .8">
                 <span class="brand-text font-weight-light">Track Truck</span>
             </a>
 
@@ -232,7 +254,8 @@
                 <!-- SidebarSearch Form -->
                 <div class="form-inline">
                     <div class="input-group" data-widget="sidebar-search">
-                        <input class="form-control form-control-sidebar" type="search" placeholder="Search" aria-label="Search">
+                        <input class="form-control form-control-sidebar" type="search" placeholder="Search"
+                            aria-label="Search">
                         <div class="input-group-append">
                             <button class="btn btn-sidebar">
                                 <i class="fas fa-search fa-fw"></i>
@@ -243,7 +266,8 @@
 
                 <!-- Sidebar Menu -->
                 <nav class="mt-2">
-                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
+                        data-accordion="false">
                         <!-- Menu Item 1 -->
                         <li class="nav-item">
                             <a href="{{ route('truk.index') }}" class="nav-link">

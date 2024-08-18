@@ -48,7 +48,7 @@
                                         <td>{{ $detail->minyak }}</td>
                                         <td>
                                             <a href="{{ route('details.show', $detail->id) }}" class="btn btn-info btn-sm">Detail</a>
-                                            <a href="{{ route('details.edit', $detail->id) }}" class="btn btn-warning btn-sm">Edit</a>
+                                            {{-- <a href="{{ route('details.edit', $detail->id) }}" class="btn btn-warning btn-sm">Edit</a> --}}
                                             <form action="{{ route('details.destroy', $detail->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus detail perjalanan ini?');">
                                                 @csrf
                                                 @method('DELETE')

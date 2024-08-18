@@ -10,16 +10,33 @@
                         <div class="gps-content-wrapper">
                             <div id="map" style="height: 500px; width: 100%;"></div>
                             <div id="gps-data">
-                                <p>Nama Supir: <strong id="nama-pengemudi">{{ $detail->perjalanan->supir->nama ?? 'Tidak Ada' }}</strong></p>
-                                <p>No Karyawan: <strong id="no-karyawan">{{ $detail->perjalanan->supir->no_karyawan ?? 'Tidak Ada' }}</strong></p>
-                                <p>No HP: <strong id="no-hp">{{ $detail->perjalanan->supir->noHP ?? 'Tidak Ada' }}</strong></p>
-                                <p>Alamat Supir: <strong id="alamat-pengemudi">{{ $detail->perjalanan->supir->alamat ?? 'Tidak Ada' }}</strong></p>
-                                <p>Plat Nomor: <strong id="plat-nomor">{{ $detail->perjalanan->truk->plat_no ?? 'Tidak Ada' }}</strong></p>
-                                <p>Nama Gudang: <strong id="nama-gudang">{{ $detail->perjalanan->gudang->nama_gudang ?? 'Tidak Ada' }}</strong></p>
-                                <p>Lokasi Berangkat: <strong id="lokasi-berangkat">{{ $detail->perjalanan->lat_berangkat ?? 'Tidak Ada' }}, {{ $detail->perjalanan->lng_berangkat ?? 'Tidak Ada' }}</strong></p>
-                                <p>Lokasi Tujuan: <strong id="lokasi-tujuan">{{ $detail->perjalanan->lat_tujuan ?? 'Tidak Ada' }}, {{ $detail->perjalanan->lng_tujuan ?? 'Tidak Ada' }}</strong></p>
-                                <p>Koordinat Terbaru: <strong id="current-coordinates">{{ $detail->lat ?? 'Tidak Tersedia' }}, {{ $detail->lng ?? 'Tidak Tersedia' }}</strong></p>
-                                <p>Waktu Terbaru: <strong id="current-timestamp">{{ $detail->timestamp ?? 'Tidak Tersedia' }}</strong></p>
+                                <p>Nama Supir: <strong
+                                        id="nama-pengemudi">{{ $detail->perjalanan->supir->nama ?? 'Tidak Ada' }}</strong>
+                                </p>
+                                <p>No Karyawan: <strong
+                                        id="no-karyawan">{{ $detail->perjalanan->supir->no_karyawan ?? 'Tidak Ada' }}</strong>
+                                </p>
+                                <p>No HP: <strong
+                                        id="no-hp">{{ $detail->perjalanan->supir->noHP ?? 'Tidak Ada' }}</strong></p>
+                                <p>Alamat Supir: <strong
+                                        id="alamat-pengemudi">{{ $detail->perjalanan->supir->alamat ?? 'Tidak Ada' }}</strong>
+                                </p>
+                                <p>Plat Nomor: <strong
+                                        id="plat-nomor">{{ $detail->perjalanan->truk->plat_no ?? 'Tidak Ada' }}</strong></p>
+                                <p>Nama Gudang: <strong
+                                        id="nama-gudang">{{ $detail->perjalanan->gudang->nama_gudang ?? 'Tidak Ada' }}</strong>
+                                </p>
+                                <p>Lokasi Berangkat: <strong
+                                        id="lokasi-berangkat">{{ $detail->perjalanan->lat_berangkat ?? 'Tidak Ada' }},
+                                        {{ $detail->perjalanan->lng_berangkat ?? 'Tidak Ada' }}</strong></p>
+                                <p>Lokasi Tujuan: <strong
+                                        id="lokasi-tujuan">{{ $detail->perjalanan->lat_tujuan ?? 'Tidak Ada' }},
+                                        {{ $detail->perjalanan->lng_tujuan ?? 'Tidak Ada' }}</strong></p>
+                                <p>Koordinat Terbaru: <strong
+                                        id="current-coordinates">{{ $detail->lat ?? 'Tidak Tersedia' }},
+                                        {{ $detail->lng ?? 'Tidak Tersedia' }}</strong></p>
+                                <p>Waktu Terbaru: <strong
+                                        id="current-timestamp">{{ $detail->timestamp ?? 'Tidak Tersedia' }}</strong></p>
                             </div>
 
                             <div class="scroll-controls">
@@ -125,7 +142,9 @@
             }).addTo(map);
 
             // Initialize gauge chart
-            google.charts.load('current', {'packages':['gauge']});
+            google.charts.load('current', {
+                'packages': ['gauge']
+            });
             google.charts.setOnLoadCallback(drawGauge);
 
             function drawGauge() {
@@ -135,23 +154,39 @@
                 ]);
 
                 const options = {
-                    width: 400, height: 120,
-                    redFrom: 0, redTo: 10,
-                    yellowFrom:10, yellowTo: 30,
-                    greenFrom:30, greenTo: 100,
+                    width: 400,
+                    height: 120,
+                    redFrom: 0,
+                    redTo: 10,
+                    yellowFrom: 10,
+                    yellowTo: 30,
+                    greenFrom: 30,
+                    greenTo: 100,
                     minorTicks: 5
                 };
 
                 const chart = new google.visualization.Gauge(document.getElementById('gauge_chart'));
                 chart.draw(data, options);
 
-                // Update the gauge periodically
+                // Update the gauge and color periodically
                 setInterval(() => {
-                    fetch('/api/fuel-level')
+                    fetch('/api/sensor-data')
                         .then(response => response.json())
                         .then(data => {
-                            const fuelLevel = data.persentase_bahan_bakar;
-                            document.getElementById('fuel-level').textContent = fuelLevel;
+                            const fuelLevel = data.fuelLevel; // Adjust based on your API response
+                            const fuelLevelElement = document.getElementById('fuel-level');
+
+                            fuelLevelElement.textContent = fuelLevel;
+
+                            // Update color based on fuel level
+                            if (fuelLevel <= 10) {
+                                fuelLevelElement.className = 'fuel-level low-fuel';
+                            } else if (fuelLevel <= 30) {
+                                fuelLevelElement.className = 'fuel-level medium-fuel';
+                            } else {
+                                fuelLevelElement.className = 'fuel-level high-fuel';
+                            }
+
                             chart.draw(google.visualization.arrayToDataTable([
                                 ['Label', 'Value'],
                                 ['Fuel Level', fuelLevel]
@@ -159,6 +194,7 @@
                         });
                 }, 5000);
             }
+
         }
 
         function stopJourney() {
@@ -195,11 +231,16 @@
             }
 
             journeyInterval = setInterval(() => {
-                fetch('/api/gps-data/latest')
+                fetch('/api/sensor-data')
                     .then(response => response.json())
                     .then(data => {
                         if (data) {
-                            const { lat, lng, timestamp } = data;
+                            const {
+                                lat,
+                                lng,
+                                timestamp,
+                                fuelLevel
+                            } = data;
 
                             document.getElementById('current-coordinates').textContent = `${lat}, ${lng}`;
                             document.getElementById('current-timestamp').textContent = timestamp;
@@ -215,14 +256,17 @@
                             if (polyline) {
                                 polyline.setLatLngs(routeCoordinates);
                             } else {
-                                polyline = L.polyline(routeCoordinates, { color: 'blue' }).addTo(map);
+                                polyline = L.polyline(routeCoordinates, {
+                                    color: 'blue'
+                                }).addTo(map);
                             }
 
                             if (routingControl) {
                                 routingControl.setWaypoints(routeCoordinates);
                             } else {
                                 routingControl = L.Routing.control({
-                                    waypoints: routeCoordinates.map(coord => L.latLng(coord[0], coord[1])),
+                                    waypoints: routeCoordinates.map(coord => L.latLng(coord[0], coord[
+                                        1])),
                                     createMarker: () => null
                                 }).addTo(map);
                             }
