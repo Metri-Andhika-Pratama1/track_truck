@@ -38,7 +38,7 @@
                     <label for="alamat" class="form-label">Alamat</label>
                     <textarea class="form-control" id="alamat" name="alamat" rows="3" required>{{ $supir->alamat }}</textarea>
                 </div>
-                <button type="submit" class="btn btn-primary">Update</button>
+                <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
                 <a href="{{ route('supir.index') }}" class="btn btn-secondary">Kembali</a>
             </form>
         </div>

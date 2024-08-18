@@ -34,7 +34,7 @@
                     <input type="text" class="form-control" id="lng" name="lng"
                         value="{{ old('lng', $gudang->lng) }}" required>
                 </div>
-                <button type="submit" class="btn btn-primary">Update</button>
+                <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
                 <a href="{{ route('gudang.index') }}" class="btn btn-secondary">Kembali</a>
             </form>
         </div>

@@ -34,7 +34,7 @@
                     <label for="tahun_pembuatan" class="form-label">Tahun Pembuatan</label>
                     <textarea class="form-control border border-secondary" id="tahun_pembuatan" name="tahun_pembuatan" rows="3" required>{{ $truk->tahun_pembuatan }}</textarea>
                 </div>
-                <button type="submit" class="btn btn-primary">Update</button>
+                <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
                 <a href="{{ route('truk.index') }}" class="btn btn-secondary">Kembali</a>
             </form>
         </div>

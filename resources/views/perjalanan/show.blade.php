@@ -8,18 +8,17 @@
             <div class="row mb-2">
                 <div class="col-sm-6">
                     <h1 class="m-0">Perjalanan</h1>
-                </div><!-- /.col -->
+                </div>
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
                         <li class="breadcrumb-item"><a href="#">Home</a></li>
                         <li class="breadcrumb-item"><a href="{{ route('perjalanan.index') }}">Data Perjalanan</a></li>
                         <li class="breadcrumb-item active">Perjalanan</li>
                     </ol>
-                </div><!-- /.col -->
-            </div><!-- /.row -->
-        </div><!-- /.container-fluid -->
+                </div>
+            </div>
+        </div>
     </div>
-    <!-- /.content-header -->
 
     <!-- Main content -->
     <div class="content">
@@ -30,7 +29,6 @@
                         <div class="card-header">
                             <h3 class="card-title">Perjalanan #{{ $perjalanan->id }}</h3>
                         </div>
-                        <!-- /.card-header -->
                         <div class="card-body">
                             <div class="row mb-3">
                                 <div class="col-md-6">
@@ -48,53 +46,45 @@
                                     <p>{{ $perjalanan->gudang->nama_gudang }}</p>
                                 </div>
                                 <div class="col-md-6">
-                                    <h5>Lokasi Berangkat:</h5>
+                                    <h5>Titik Berangkat:</h5>
                                     <p>Lat: {{ $perjalanan->lat_berangkat }}, Lng: {{ $perjalanan->lng_berangkat }}</p>
                                 </div>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <h5>Lokasi Tujuan:</h5>
-                                    <p>Lat: {{ $perjalanan->lat_tujuan }}, Lng: {{ $perjalanan->lng_tujuan }}</p>
+                                    <h5>Titik Tujuan:</h5>
+                                    <p>Lat: {{ $perjalanan->gudang->lat }}, Lng: {{ $perjalanan->gudang->lng }}</p>
                                 </div>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <h5>Minyak:</h5>
-                                    <p>Bensin Awal: {{ $perjalanan->bensin_awal }}%</p>
-                                    <p>Bensin Akhir: {{ $perjalanan->bensin_akhir }}%</p>
+                                    <h5>Kondisi Minyak:</h5>
+                                    <p>Minyak Awal: {{ $perjalanan->bensin_awal }}%</p>
+                                    <p>Minyak Akhir: {{ $perjalanan->bensin_akhir }}%</p>
                                 </div>
                             </div>
 
                             <a href="{{ route('perjalanan.index') }}" class="btn btn-secondary">Kembali</a>
                         </div>
-                        <!-- /.card-body -->
                     </div>
-                    <!-- /.card -->
                 </div>
             </div>
-            <!-- /.row -->
 
             <!-- Grafik -->
             <div class="row">
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title">Grafik Bensin</h3>
+                            <h3 class="card-title">Grafik Minyak</h3>
                         </div>
-                        <!-- /.card-header -->
                         <div class="card-body">
                             <canvas id="bensinChart" style="height: 400px; width: 100%;"></canvas>
                         </div>
-                        <!-- /.card-body -->
                     </div>
-                    <!-- /.card -->
                 </div>
             </div>
-            <!-- /.row (grafik) -->
-        </div><!-- /.container-fluid -->
+        </div>
     </div>
-    <!-- /.content -->
 </div>
 
 <script>
@@ -105,14 +95,14 @@
           data: {
               labels: @json($labels),
               datasets: [{
-                  label: 'Bensin Awal',
+                  label: 'Minyak Awal',
                   data: @json($bensinAwal),
                   backgroundColor: 'rgba(54, 162, 235, 0.2)',
                   borderColor: 'rgba(54, 162, 235, 1)',
                   borderWidth: 2,
                   fill: false
               }, {
-                  label: 'Bensin Akhir',
+                  label: 'Minyak Akhir',
                   data: @json($bensinAkhir),
                   backgroundColor: 'rgba(255, 99, 132, 0.2)',
                   borderColor: 'rgba(255, 99, 132, 1)',
@@ -131,7 +121,7 @@
                   y: {
                       title: {
                           display: true,
-                          text: 'Jumlah Bensin'
+                          text: 'Jumlah Minyak'
                       },
                       beginAtZero: true
                   }

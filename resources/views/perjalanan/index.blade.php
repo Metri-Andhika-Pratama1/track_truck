@@ -34,8 +34,11 @@
                                 <tr>
                                     <th>Nama Supir</th>
                                     <th>Plat Nomor</th>
-                                    <th>Gudang Tujuan</th>
+                                    <th>Nama Gudang</th>
+                                    <th>Titik Berangkat</th>
+                                    <th>Titik Tujuan</th>
                                     <th>Bensin Awal (%)</th>
+                                    <th>Bensin Akhir (%)</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -45,7 +48,10 @@
                                         <td>{{ $perjalanan->supir->nama }}</td>
                                         <td>{{ $perjalanan->truk->plat_no }}</td>
                                         <td>{{ $perjalanan->gudang->nama_gudang }}</td>
-                                        <td>{{ $perjalanan->bensin_awal }}%</td>
+                                        <td>Lat: {{ $perjalanan->lat_berangkat }}, Lng: {{ $perjalanan->lng_berangkat }}</td>
+                                        <td>Lat: {{ $perjalanan->gudang->lat }}, Lng: {{ $perjalanan->gudang->lng }}</td>
+                                        <td>{{ $perjalanan->bensin_awal }}</td>
+                                        <td>{{ $perjalanan->bensin_akhir }}</td>
                                         <td>
                                             <a href="{{ route('perjalanan.show', $perjalanan->id) }}" class="btn btn-info">Detail</a>
                                             <a href="{{ route('perjalanan.edit', $perjalanan->id) }}" class="btn btn-warning">Edit</a>

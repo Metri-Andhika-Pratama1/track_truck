@@ -14,7 +14,7 @@
                         <li class="breadcrumb-item"><a href="#">Home</a></li>
                         <li class="breadcrumb-item active">Data Detail Perjalanan</li>
                     </ol>
-                </div><!-- /.col -->
+                </dcdiv><!-- /.col -->
             </div><!-- /.row -->
         </div><!-- /.container-fluid -->
     </div>
@@ -32,9 +32,8 @@
                     <table class="table table-bordered">
                         <thead>
                             <tr>
-                                <th>No</th>
                                 <th>Latitude</th>
-                                <th>Latitude</th>
+                                <th>Longitude</th>
                                 <th>Minyak</th>
                                 <th>Aksi</th>
                             </tr>
@@ -42,8 +41,6 @@
                         <tbody>
                             @foreach ($details as $detail)
                             <tr>
-                                <td>{{ $loop->iteration }}</td>
-                                <!-- Pastikan 'supir' dan 'plat_nomor' ada di relasi 'perjalanan' -->
                                 <td>{{ $detail->lat }}</td>
                                 <td>{{ $detail->lng }}</td>
                                 <td>{{ $detail->minyak }}</td>
