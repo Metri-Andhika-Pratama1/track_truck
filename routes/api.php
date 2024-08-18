@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\FuelLevelController;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DetailPerjalananController;
@@ -23,7 +23,4 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::post('sensor-data', [DetailPerjalananController::class, 'receiveFromSensor']);
-
-Route::post('/fuel-level', [FuelLevelController::class, 'store']);
-Route::get('/fuel-level/latest', [FuelLevelController::class, 'latest']);
 

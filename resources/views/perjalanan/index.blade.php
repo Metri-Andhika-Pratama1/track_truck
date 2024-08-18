@@ -32,6 +32,7 @@
                         <table class="table table-bordered">
                             <thead>
                                 <tr>
+                                    <th>No</th>
                                     <th>Nama Supir</th>
                                     <th>Plat Nomor</th>
                                     <th>Nama Gudang</th>
@@ -45,6 +46,7 @@
                             <tbody>
                                 @foreach($perjalanans as $perjalanan)
                                     <tr>
+                                        <td>{{ $loop->iteration }}</td>
                                         <td>{{ $perjalanan->supir->nama }}</td>
                                         <td>{{ $perjalanan->truk->plat_no }}</td>
                                         <td>{{ $perjalanan->gudang->nama_gudang }}</td>
@@ -53,12 +55,12 @@
                                         <td>{{ $perjalanan->bensin_awal }}</td>
                                         <td>{{ $perjalanan->bensin_akhir }}</td>
                                         <td>
-                                            <a href="{{ route('perjalanan.show', $perjalanan->id) }}" class="btn btn-info">Detail</a>
-                                            <a href="{{ route('perjalanan.edit', $perjalanan->id) }}" class="btn btn-warning">Edit</a>
-                                            <form action="{{ route('perjalanan.destroy', $perjalanan->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">
+                                            <a href="{{ route('perjalanan.show', $perjalanan->id) }}" class="btn btn-info btn-sm">Detail</a>
+                                            <a href="{{ route('perjalanan.edit', $perjalanan->id) }}" class="btn btn-warning btn-sm">Edit</a>
+                                            <form action="{{ route('perjalanan.destroy', $perjalanan->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-danger">Hapus</button>
+                                                <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
                                             </form>
                                         </td>
                                     </tr>
