@@ -10,28 +10,16 @@
                         <div class="gps-content-wrapper">
                             <div id="map" style="height: 500px; width: 100%;"></div>
                             <div id="gps-data">
-                                <p>Nama Supir: <strong
-                                        id="nama-pengemudi">{{ $detail->perjalanan->supir->nama ?? 'Tidak Ada' }}</strong>
-                                </p>
-                                <p>No Karyawan: <strong
-                                        id="no-karyawan">{{ $detail->perjalanan->supir->no_karyawan ?? 'Tidak Ada' }}</strong>
-                                </p>
-                                <p>No HP: <strong
-                                        id="no-hp">{{ $detail->perjalanan->supir->noHP ?? 'Tidak Ada' }}</strong></p>
-                                <p>Alamat Supir: <strong
-                                        id="alamat-pengemudi">{{ $detail->perjalanan->supir->alamat ?? 'Tidak Ada' }}</strong>
-                                </p>
-                                <p>Plat Nomor: <strong
-                                        id="plat-nomor">{{ $detail->perjalanan->truk->plat_no ?? 'Tidak Ada' }}</strong></p>
-                                <p>Nama Gudang: <strong
-                                        id="nama-gudang">{{ $detail->perjalanan->gudang->nama_gudang ?? 'Tidak Ada' }}</strong>
-                                </p>
-                                <p>Lokasi Berangkat: <strong
-                                        id="lokasi-berangkat">{{ $detail->perjalanan->lat_berangkat ?? 'Tidak Ada' }},
-                                        {{ $detail->perjalanan->lng_berangkat ?? 'Tidak Ada' }}</strong></p>
-                                <p>Lokasi Tujuan: <strong
-                                        id="lokasi-tujuan">{{ $detail->perjalanan->lat_tujuan ?? 'Tidak Ada' }},
-                                        {{ $detail->perjalanan->lng_tujuan ?? 'Tidak Ada' }}</strong></p>
+                                <p>Nama Supir: <strong id="nama-pengemudi">{{ $detail->perjalanan->supir->nama ?? 'Tidak Ada' }}</strong></p>
+                                <p>No Karyawan: <strong id="no-karyawan">{{ $detail->perjalanan->supir->no_karyawan ?? 'Tidak Ada' }}</strong></p>
+                                <p>No HP: <strong id="no-hp">{{ $detail->perjalanan->supir->noHP ?? 'Tidak Ada' }}</strong></p>
+                                <p>Alamat Supir: <strong id="alamat-pengemudi">{{ $detail->perjalanan->supir->alamat ?? 'Tidak Ada' }}</strong></p>
+                                <p>Plat Nomor: <strong id="plat-nomor">{{ $detail->perjalanan->truk->plat_no ?? 'Tidak Ada' }}</strong></p>
+                                <p>Nama Gudang: <strong id="nama-gudang">{{ $detail->perjalanan->gudang->nama_gudang ?? 'Tidak Ada' }}</strong></p>
+                                <p>Lokasi Berangkat: <strong id="lokasi-berangkat">{{ $detail->perjalanan->lat_berangkat ?? 'Tidak Ada' }}, {{ $detail->perjalanan->lng_berangkat ?? 'Tidak Ada' }}</strong></p>
+                                <p>Lokasi Tujuan: <strong id="lokasi-tujuan">{{ $detail->perjalanan->lat_tujuan ?? 'Tidak Ada' }}, {{ $detail->perjalanan->lng_tujuan ?? 'Tidak Ada' }}</strong></p>
+                                <p>Koordinat Terbaru: <strong id="current-coordinates">{{ $detail->lat ?? 'Tidak Tersedia' }}, {{ $detail->lng ?? 'Tidak Tersedia' }}</strong></p>
+                                <p>Waktu Terbaru: <strong id="current-timestamp">{{ $detail->timestamp ?? 'Tidak Tersedia' }}</strong></p>
                             </div>
 
                             <div class="scroll-controls">
@@ -82,8 +70,8 @@
         };
 
         const destinationPoint = {
-            lat: {{ $detail->perjalanan->lat_tujuan ?? $gudang->lat }},
-            lng: {{ $detail->perjalanan->lng_tujuan ?? $gudang->lng }}
+            lat: {{ $detail->perjalanan->lat_tujuan ?? 'null' }},
+            lng: {{ $detail->perjalanan->lng_tujuan ?? 'null' }}
         };
 
         function initMap() {
@@ -162,7 +150,7 @@
                     fetch('/api/fuel-level')
                         .then(response => response.json())
                         .then(data => {
-                            const fuelLevel = data.fuelLevel;
+                            const fuelLevel = data.persentase_bahan_bakar;
                             document.getElementById('fuel-level').textContent = fuelLevel;
                             chart.draw(google.visualization.arrayToDataTable([
                                 ['Label', 'Value'],
@@ -206,52 +194,47 @@
                 routingControl = null;
             }
 
-            routeCoordinates = [];
-            polyline = L.polyline([], {
-                color: 'green',
-                weight: 4,
-                opacity: 0.7
-            }).addTo(map);
-
             journeyInterval = setInterval(() => {
-                fetch('/api/current-location')
+                fetch('/api/gps-data/latest')
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Received data:', data); // Debugging data
+                        if (data) {
+                            const { lat, lng, timestamp } = data;
 
-                        currentLocation.lat = data.lat;
-                        currentLocation.lng = data.lng;
+                            document.getElementById('current-coordinates').textContent = `${lat}, ${lng}`;
+                            document.getElementById('current-timestamp').textContent = timestamp;
 
-                        if (currentMarker) {
-                            currentMarker.setLatLng([currentLocation.lat, currentLocation.lng]);
-                        } else {
-                            currentMarker = L.marker([currentLocation.lat, currentLocation.lng], {
-                                icon: L.divIcon({
-                                    className: 'custom-div-icon',
-                                    html: '<i class="fas fa-truck" style="font-size: 30px; color: green;"></i>',
-                                    iconSize: [30, 42],
-                                    iconAnchor: [15, 42]
-                                })
-                            }).addTo(map);
-                        }
+                            if (currentMarker) {
+                                currentMarker.setLatLng([lat, lng]);
+                            } else {
+                                currentMarker = L.marker([lat, lng]).addTo(map);
+                            }
 
-                        routeCoordinates.push([currentLocation.lat, currentLocation.lng]);
-                        polyline.setLatLngs(routeCoordinates);
+                            routeCoordinates.push([lat, lng]);
 
-                        if (!routingControl) {
-                            routingControl = L.Routing.control({
-                                waypoints: [
-                                    L.latLng(departurePoint.lat, departurePoint.lng),
-                                    L.latLng(destinationPoint.lat, destinationPoint.lng)
-                                ],
-                                routeWhileDragging: true
-                            }).addTo(map);
+                            if (polyline) {
+                                polyline.setLatLngs(routeCoordinates);
+                            } else {
+                                polyline = L.polyline(routeCoordinates, { color: 'blue' }).addTo(map);
+                            }
+
+                            if (routingControl) {
+                                routingControl.setWaypoints(routeCoordinates);
+                            } else {
+                                routingControl = L.Routing.control({
+                                    waypoints: routeCoordinates.map(coord => L.latLng(coord[0], coord[1])),
+                                    createMarker: () => null
+                                }).addTo(map);
+                            }
+
+                            map.fitBounds(polyline.getBounds());
                         }
                     });
             }, 5000);
         }
 
-        document.addEventListener('DOMContentLoaded', initMap);
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+        });
     </script>
-
 @endsection
