@@ -46,7 +46,7 @@ class PerjalananController extends Controller
             'lat_tujuan' => 'required|numeric|between:-90,90',
             'lng_tujuan' => 'required|numeric|between:-180,180',
             'bensin_awal' => 'required|numeric|min:0|max:100', // Pastikan dalam persen
-            'bensin_akhir' => 'required|numeric|min:0|max:100', // Pastikan dalam persen
+            'bensin_akhir' => 'nullable|numeric|min:0|max:100', // Pastikan dalam persen
         ]);
 
         Perjalanan::create($request->only([
@@ -144,7 +144,7 @@ class PerjalananController extends Controller
             'lat_tujuan' => 'required|numeric|between:-90,90',
             'lng_tujuan' => 'required|numeric|between:-180,180',
             'bensin_awal' => 'required|numeric|min:0|max:100', // Pastikan dalam persen
-            'bensin_akhir' => 'required|numeric|min:0|max:100', // Pastikan dalam persen
+            'bensin_akhir' => 'nullable|numeric|min:0|max:100', // Pastikan dalam persen
         ]);
 
         $perjalanan = Perjalanan::findOrFail($id);
