@@ -65,11 +65,9 @@
 
     <script src="https://www.gstatic.com/charts/loader.js"></script>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
     <script>
         let map;
         let journeyInterval;
-        let polyline;
         let routingControl;
         let currentMarker;
         let routeCoordinates = [];
@@ -168,33 +166,28 @@
                 const chart = new google.visualization.Gauge(document.getElementById('gauge_chart'));
                 chart.draw(data, options);
 
-                // Update the gauge and color periodically
+                // Update the gauge and color periodically without API
                 setInterval(() => {
-                    fetch('/api/sensor-data')
-                        .then(response => response.json())
-                        .then(data => {
-                            const fuelLevel = data.fuelLevel; // Adjust based on your API response
-                            const fuelLevelElement = document.getElementById('fuel-level');
+                    const fuelLevel = {{ $detail->minyak ?? 0 }};
+                    const fuelLevelElement = document.getElementById('fuel-level');
 
-                            fuelLevelElement.textContent = fuelLevel;
+                    fuelLevelElement.textContent = fuelLevel;
 
-                            // Update color based on fuel level
-                            if (fuelLevel <= 10) {
-                                fuelLevelElement.className = 'fuel-level low-fuel';
-                            } else if (fuelLevel <= 30) {
-                                fuelLevelElement.className = 'fuel-level medium-fuel';
-                            } else {
-                                fuelLevelElement.className = 'fuel-level high-fuel';
-                            }
+                    // Update color based on fuel level
+                    if (fuelLevel <= 10) {
+                        fuelLevelElement.className = 'fuel-level low-fuel';
+                    } else if (fuelLevel <= 30) {
+                        fuelLevelElement.className = 'fuel-level medium-fuel';
+                    } else {
+                        fuelLevelElement.className = 'fuel-level high-fuel';
+                    }
 
-                            chart.draw(google.visualization.arrayToDataTable([
-                                ['Label', 'Value'],
-                                ['Fuel Level', fuelLevel]
-                            ]), options);
-                        });
+                    chart.draw(google.visualization.arrayToDataTable([
+                        ['Label', 'Value'],
+                        ['Fuel Level', fuelLevel]
+                    ]), options);
                 }, 5000);
             }
-
         }
 
         function stopJourney() {
@@ -208,11 +201,6 @@
                 routingControl = null;
             }
 
-            if (polyline) {
-                polyline.remove();
-                polyline = null;
-            }
-
             // Store the route coordinates for later use
             console.log('Final route coordinates:', routeCoordinates);
         }
@@ -220,65 +208,53 @@
         function startJourney() {
             if (journeyInterval) return;
 
-            if (polyline) {
-                polyline.remove();
-                polyline = null;
-            }
-
             if (routingControl) {
                 routingControl.remove();
                 routingControl = null;
             }
 
+            // Reset route coordinates
+            routeCoordinates = [];
+
+            currentMarker = L.marker([currentLocation.lat, currentLocation.lng], {
+                icon: L.divIcon({
+                    className: 'custom-div-icon',
+                    html: '<i class="fas fa-truck" style="font-size: 30px; color: green;"></i>',
+                    iconSize: [30, 42],
+                    iconAnchor: [15, 42]
+                })
+            }).addTo(map);
+
+
+            map.setView([currentLocation.lat, currentLocation.lng], 15);
+
+            // Initialize routing control without drawing polyline between waypoints
+            routingControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(departurePoint.lat, departurePoint.lng),
+                    L.latLng(destinationPoint.lat, destinationPoint.lng)
+                ],
+                createMarker: function() {
+                    return null; // Do not create default markers
+                },
+                routeWhileDragging: false,
+                show: false
+            }).addTo(map);
+
             journeyInterval = setInterval(() => {
-                fetch('/api/sensor-data')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data) {
-                            const {
-                                lat,
-                                lng,
-                                timestamp,
-                                fuelLevel
-                            } = data;
+                const nextLat = currentLocation.lat += 0.0001; // Example for next latitude
+                const nextLng = currentLocation.lng += 0.0001; // Example for next longitude
 
-                            document.getElementById('current-coordinates').textContent = `${lat}, ${lng}`;
-                            document.getElementById('current-timestamp').textContent = timestamp;
+                routeCoordinates.push([nextLat, nextLng]);
 
-                            if (currentMarker) {
-                                currentMarker.setLatLng([lat, lng]);
-                            } else {
-                                currentMarker = L.marker([lat, lng]).addTo(map);
-                            }
+                currentMarker.setLatLng([nextLat, nextLng]);
 
-                            routeCoordinates.push([lat, lng]);
+                map.setView([nextLat, nextLng], 15);
 
-                            if (polyline) {
-                                polyline.setLatLngs(routeCoordinates);
-                            } else {
-                                polyline = L.polyline(routeCoordinates, {
-                                    color: 'blue'
-                                }).addTo(map);
-                            }
-
-                            if (routingControl) {
-                                routingControl.setWaypoints(routeCoordinates);
-                            } else {
-                                routingControl = L.Routing.control({
-                                    waypoints: routeCoordinates.map(coord => L.latLng(coord[0], coord[
-                                        1])),
-                                    createMarker: () => null
-                                }).addTo(map);
-                            }
-
-                            map.fitBounds(polyline.getBounds());
-                        }
-                    });
-            }, 5000);
+                console.log('Current route coordinates:', routeCoordinates);
+            }, 5000); // Example interval
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            initMap();
-        });
+        initMap();
     </script>
 @endsection
