@@ -68,7 +68,7 @@
                                     </div>
                                 </div>
                                 <div class="scroll-controls">
-                                    <a href="{{ route('perjalanan.index') }}" class="btn btn-secondary">Kembali</a>
+                                    <a href="{{ route('details.index') }}" class="btn btn-secondary">Kembali</a>
                                     <button id="scroll-start" onclick="startJourney()">Start Journey</button>
                                     <button id="scroll-stop" onclick="stopJourney()">Stop Journey</button>
 

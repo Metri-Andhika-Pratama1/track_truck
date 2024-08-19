@@ -55,7 +55,7 @@
                                         <td>{{ $perjalanan->bensin_awal }}</td>
                                         <td>{{ $perjalanan->bensin_akhir }}</td>
                                         <td>
-                                            <a href="{{ route('perjalanan.show', $perjalanan->id ?? $detail->id) }}" class="btn btn-info btn-sm">Detail</a>
+                                            <a href="{{ route('details.index', $perjalanan->id)}}" class="btn btn-primary btn-sm">Details</a>
                                             <a href="{{ route('perjalanan.edit', $perjalanan->id) }}" class="btn btn-warning btn-sm">Edit</a>
                                             <form action="{{ route('perjalanan.destroy', $perjalanan->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">
                                                 @csrf
