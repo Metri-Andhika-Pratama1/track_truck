@@ -24,3 +24,4 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::post('sensor-data', [DetailPerjalananController::class, 'receiveFromSensor']);
 
+Route::get('/detail-perjalanan/latest/{perjalananId}', [DetailPerjalananController::class, 'getLatestByPerjalananId'])->name('detail.latest');

@@ -11,9 +11,6 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class DetailPerjalananController extends Controller
 {
-    /**
-     * Menampilkan daftar DetailPerjalanan dengan hanya data pertama dan terakhir untuk setiap perjalanan_id.
-     */
     public function index()
     {
         // Mengambil ID perjalanan yang unik
@@ -49,18 +46,12 @@ class DetailPerjalananController extends Controller
         return view('detail_perjalanan.index', compact('details'));
     }
 
-    /**
-     * Menampilkan form untuk membuat DetailPerjalanan baru.
-     */
     public function create()
     {
         $perjalanans = Perjalanan::all(); // Mengambil data perjalanan
         return view('detail_perjalanan.create', compact('perjalanans'));
     }
 
-    /**
-     * Menyimpan DetailPerjalanan baru ke database.
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -77,9 +68,6 @@ class DetailPerjalananController extends Controller
         return redirect()->route('details.index')->with('success', 'Detail perjalanan berhasil ditambahkan.');
     }
 
-    /**
-     * Endpoint untuk menerima data dari sensor di Arduino.
-     */
     public function receiveFromSensor(Request $request)
     {
         try {
@@ -144,18 +132,12 @@ class DetailPerjalananController extends Controller
         }
     }
 
-    /**
-     * Menampilkan detail dari DetailPerjalanan yang spesifik.
-     */
     public function show($id)
     {
         $detail = DetailPerjalanan::with('perjalanan')->findOrFail($id);
         return view('detail_perjalanan.show', compact('detail'));
     }
 
-    /**
-     * Menampilkan form untuk mengedit DetailPerjalanan yang spesifik.
-     */
     public function edit($id)
     {
         $detail = DetailPerjalanan::findOrFail($id);
@@ -163,9 +145,6 @@ class DetailPerjalananController extends Controller
         return view('detail_perjalanan.edit', compact('detail', 'perjalanans'));
     }
 
-    /**
-     * Memperbarui DetailPerjalanan yang spesifik di database.
-     */
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -183,9 +162,6 @@ class DetailPerjalananController extends Controller
         return redirect()->route('details.index')->with('success', 'Detail perjalanan berhasil diperbarui.');
     }
 
-    /**
-     * Menghapus DetailPerjalanan yang spesifik dari database.
-     */
     public function destroy($id)
     {
         $detail = DetailPerjalanan::findOrFail($id);
@@ -194,10 +170,7 @@ class DetailPerjalananController extends Controller
         return redirect()->route('details.index')->with('success', 'Detail perjalanan berhasil dihapus.');
     }
 
-    /**
-     * Mengambil nilai persentase bahan bakar terbaru berdasarkan perjalanan_id.
-     */
-    public function getLatestFuelLevel($perjalananId)
+    public function getLatestByPerjalananId($perjalananId)
     {
         try {
             $latestDetail = DetailPerjalanan::where('perjalanan_id', $perjalananId)
@@ -206,7 +179,9 @@ class DetailPerjalananController extends Controller
 
             if ($latestDetail) {
                 return response()->json([
-                    'persentase_bahan_bakar' => $latestDetail->minyak
+                    'lat' => $latestDetail->lat,
+                    'lng' => $latestDetail->lng,
+                    'persentase_bahan_bakar' => $latestDetail->minyak,
                 ]);
             }
 

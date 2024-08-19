@@ -16,8 +16,8 @@
                         </ol>
                     </div>
                 </div>
-                 <!-- Tombol Cetak -->
-                 <button onclick="window.print();" class="btn btn-success">Cetak</button>
+                <!-- Tombol Cetak -->
+                <button onclick="window.print();" class="btn btn-success">Cetak</button>
             </div>
         </div>
 
@@ -69,9 +69,10 @@
                                 </div>
                                 <div class="scroll-controls">
                                     <a href="{{ route('details.index') }}" class="btn btn-secondary">Kembali</a>
-                                    <button id="scroll-start" onclick="startJourney()">Start Journey</button>
-                                    <button id="scroll-stop" onclick="stopJourney()">Stop Journey</button>
-
+                                    <button id="scroll-start" onclick="startJourney()" class="btn btn-primary">Start
+                                        Journey</button>
+                                    <button id="scroll-stop" onclick="stopJourney()" class="btn btn-danger">Stop
+                                        Journey</button>
                                 </div>
                             </div>
                         </div>
@@ -114,37 +115,40 @@
 
             <script src="https://www.gstatic.com/charts/loader.js"></script>
             <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+            <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
             <script>
                 let map;
                 let journeyInterval;
                 let currentMarker;
                 let routeCoordinates = [];
                 let routePolyline;
+                let routingControl;
                 let isJourneyActive = false;
-
+            
                 const currentLocation = {
                     lat: {{ $detail->lat ?? 'null' }},
                     lng: {{ $detail->lng ?? 'null' }}
                 };
-
+            
                 const departurePoint = {
                     lat: {{ $detail->perjalanan->lat_berangkat ?? 'null' }},
                     lng: {{ $detail->perjalanan->lng_berangkat ?? 'null' }}
                 };
-
+            
                 const destinationPoint = {
                     lat: {{ $detail->perjalanan->lat_tujuan ?? 'null' }},
                     lng: {{ $detail->perjalanan->lng_tujuan ?? 'null' }}
                 };
-
+            
                 function initMap() {
                     map = L.map('map').setView([currentLocation.lat, currentLocation.lng], 12);
-
+            
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     }).addTo(map);
-
+            
+                    // Menambahkan marker untuk titik keberangkatan
                     L.marker([departurePoint.lat, departurePoint.lng], {
                         icon: L.divIcon({
                             className: 'custom-div-icon',
@@ -153,7 +157,8 @@
                             iconAnchor: [15, 42]
                         })
                     }).addTo(map);
-
+            
+                    // Menambahkan marker untuk titik tujuan
                     L.marker([destinationPoint.lat, destinationPoint.lng], {
                         icon: L.divIcon({
                             className: 'custom-div-icon',
@@ -162,19 +167,19 @@
                             iconAnchor: [15, 42]
                         })
                     }).addTo(map);
-
-                    // Initialize gauge chart
+            
+                    // Inisialisasi gauge chart
                     google.charts.load('current', {
                         'packages': ['gauge']
                     });
                     google.charts.setOnLoadCallback(drawGauge);
-
+            
                     function drawGauge() {
                         const data = google.visualization.arrayToDataTable([
                             ['Label', 'Value'],
                             ['Fuel Level', {{ $detail->minyak ?? 0 }}]
                         ]);
-
+            
                         const options = {
                             width: 400,
                             height: 120,
@@ -186,101 +191,115 @@
                             greenTo: 100,
                             minorTicks: 5
                         };
-
+            
                         const chart = new google.visualization.Gauge(document.getElementById('gauge_chart'));
                         chart.draw(data, options);
-
-                        // Update the gauge and color periodically without API
+            
+                        // Update gauge setiap 5 detik
                         setInterval(() => {
-                            const fuelLevel = {{ $detail->minyak ?? 0 }};
-                            const fuelLevelElement = document.getElementById('fuel-level');
-
-                            fuelLevelElement.textContent = fuelLevel;
-
-                            // Update color based on fuel level
-                            if (fuelLevel <= 10) {
-                                fuelLevelElement.style.color = 'red';
-                            } else if (fuelLevel <= 30) {
-                                fuelLevelElement.style.color = 'yellow';
-                            } else {
-                                fuelLevelElement.style.color = 'green';
-                            }
-
-                            data.setValue(0, 1, fuelLevel);
-                            chart.draw(data, options);
-                        }, 5000); // Update every 5 seconds
+                            fetch('/sensor-data', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                const fuelLevel = data.fuelLevel; // Sesuaikan dengan data yang diterima
+                                const fuelLevelElement = document.getElementById('fuel-level');
+            
+                                fuelLevelElement.textContent = fuelLevel;
+            
+                                // Update warna berdasarkan level bensin
+                                if (fuelLevel <= 10) {
+                                    fuelLevelElement.style.color = 'red';
+                                } else if (fuelLevel <= 30) {
+                                    fuelLevelElement.style.color = 'orange';
+                                } else {
+                                    fuelLevelElement.style.color = 'green';
+                                }
+            
+                                data.setValue(0, 1, fuelLevel);
+                                chart.draw(data, options);
+                            });
+                        }, 5000);
                     }
                 }
-
+            
                 function startJourney() {
                     if (isJourneyActive) return;
 
                     isJourneyActive = true;
 
-                    currentMarker = L.marker([currentLocation.lat, currentLocation.lng], {
+                    currentMarker = L.marker([departurePoint.lat, departurePoint.lng], {
                         icon: L.divIcon({
                             className: 'custom-div-icon',
-                            html: '<i class="fas fa-truck" style="font-size: 38px; color: blue;"></i>',
+                            html: '<i class="fas fa-truck" style="font-size: 38px; color: green;"></i>',
                             iconSize: [30, 42],
                             iconAnchor: [15, 42]
                         })
                     }).addTo(map);
 
-                    routePolyline = L.polyline(routeCoordinates, {
-                        color: 'blue',
-                        weight: 3,
-                        opacity: 0.7,
-                        dashArray: '5, 10'
-                    }).addTo(map);
+                    routeCoordinates.push([departurePoint.lat, departurePoint.lng]);
 
-                    map.setView([currentLocation.lat, currentLocation.lng], 15);
-
+                    // Update posisi truk setiap 5 detik
                     journeyInterval = setInterval(() => {
-                        const nextLat = currentLocation.lat + 0.0001; // Simulate movement
-                        const nextLng = currentLocation.lng + 0.0001; // Simulate movement
+                        fetch('/sensor-data', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            const { lat, lng } = data;
+                            currentMarker.setLatLng([lat, lng]);
+                            routeCoordinates.push([lat, lng]);
 
-                        currentLocation.lat = nextLat;
-                        currentLocation.lng = nextLng;
+                            if (routePolyline) {
+                                map.removeLayer(routePolyline);
+                            }
 
-                        routeCoordinates.push([nextLat, nextLng]);
+                            routePolyline = L.polyline(routeCoordinates, {
+                                color: 'blue',
+                                weight: 5,
+                                opacity: 0.7
+                            }).addTo(map);
 
-                        currentMarker.setLatLng([nextLat, nextLng]);
-                        routePolyline.setLatLngs(routeCoordinates);
+                            if (routingControl) {
+                                map.removeControl(routingControl);
+                            }
 
-                        map.setView([nextLat, nextLng], 15);
-
-                        console.log('Current route coordinates:', routeCoordinates);
-                    }, 5000); // Update every 5 seconds
+                            routingControl = L.Routing.control({
+                                waypoints: [
+                                    L.latLng(departurePoint.lat, departurePoint.lng),
+                                    L.latLng(lat, lng),
+                                    L.latLng(destinationPoint.lat, destinationPoint.lng)
+                                ],
+                                routeWhileDragging: true
+                            }).addTo(map);
+                        });
+                    }, 5000);
                 }
 
                 function stopJourney() {
                     if (!isJourneyActive) return;
 
-                    clearInterval(journeyInterval);
                     isJourneyActive = false;
+                    clearInterval(journeyInterval);
 
                     if (currentMarker) {
-                        currentMarker.remove();
-                        currentMarker = null;
+                        map.removeLayer(currentMarker);
                     }
 
                     if (routePolyline) {
-                        routePolyline.remove();
-                        routePolyline = null;
+                        map.removeLayer(routePolyline);
                     }
 
-                    // Add final route from start to end
-                    if (departurePoint.lat && destinationPoint.lat) {
-                        L.Routing.control({
-                            waypoints: [
-                                L.latLng(departurePoint.lat, departurePoint.lng),
-                                L.latLng(destinationPoint.lat, destinationPoint.lng)
-                            ],
-                            routeWhileDragging: true,
-                            lineOptions: {
-                                styles: [{ color: 'blue', weight: 4 }]
-                            }
-                        }).addTo(map);
+                    if (routingControl) {
+                        map.removeControl(routingControl);
                     }
                 }
 
