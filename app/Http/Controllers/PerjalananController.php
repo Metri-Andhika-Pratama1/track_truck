@@ -166,4 +166,13 @@ class PerjalananController extends Controller
 
         return redirect()->route('perjalanan.index')->with('success', 'Perjalanan berhasil dihapus.');
     }
+
+    public function printPerjalanan($id)
+    {
+        $detail = DetailPerjalanan::with(['perjalanan.supir', 'perjalanan.truk', 'perjalanan.gudang'])
+            ->where('id', $id)
+            ->firstOrFail();
+
+        return view('cetak.print_perjalanan', compact('detail'));
+    }
 }

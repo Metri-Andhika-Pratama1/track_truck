@@ -38,6 +38,9 @@ Route::post('login', [LoginController::class, 'login'])->name('login');
 // Route untuk logout
 Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 
+Route::get('/perjalanan/print/{id}', [PerjalananController::class, 'printPerjalanan'])->name('perjalanan.print');
+
+
 
 // Middleware auth untuk grup rute yang memerlukan autentikasi
 Route::middleware(['auth'])->group(function () { 

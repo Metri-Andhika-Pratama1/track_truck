@@ -35,6 +35,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <!-- Leaflet Routing Machine -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -111,7 +114,7 @@
         }
 
         .scroll-controls {
-            text-align: center;
+            text-align: left;
             margin-bottom: 10px;
         }
 
@@ -119,7 +122,7 @@
             background-color: #007bff;
             color: #fff;
             border: none;
-            padding: 10px 15px;
+            padding: 7px 15px;
             cursor: pointer;
             font-size: 16px;
             margin: 0 5px;

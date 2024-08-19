@@ -70,6 +70,28 @@
                 </div>
             </div>
 
+            <!-- Peta -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Peta Perjalanan</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="map" style="height: 400px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+              <!-- Buttons for Start Journey and Stop Journey -->
+              <div class="row mb-3">
+                <div class="col-md-12">
+                    <button id="startJourney" class="btn btn-success">Start Journey</button>
+                    <button id="stopJourney" class="btn btn-danger">Stop Journey</button>
+                </div>
+            </div>
+            
             <!-- Grafik -->
             <div class="row">
                 <div class="col-12">
@@ -89,6 +111,26 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+      // Initialize Map
+      var map = L.map('map').setView([{{ $perjalanan->lat_berangkat }}, {{ $perjalanan->lng_berangkat }}], 13);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap'
+      }).addTo(map);
+
+      var startMarker = L.marker([{{ $perjalanan->lat_berangkat }}, {{ $perjalanan->lng_berangkat }}]).addTo(map)
+          .bindPopup('Titik Berangkat')
+          .openPopup();
+
+      var endMarker = L.marker([{{ $perjalanan->gudang->lat }}, {{ $perjalanan->gudang->lng }}]).addTo(map)
+          .bindPopup('Titik Tujuan')
+          .openPopup();
+
+      // Polyline untuk perjalanan
+      var polyline = L.polyline([], {color: 'blue'}).addTo(map);
+
+      // Initialize Chart
       var ctx = document.getElementById('bensinChart').getContext('2d');
       var bensinChart = new Chart(ctx, {
           type: 'line',
@@ -127,6 +169,35 @@
                   }
               }
           }
+      });
+
+      // Function to update the polyline with new position
+      function updatePolyline(lat, lng) {
+          var latLng = new L.LatLng(lat, lng);
+          polyline.addLatLng(latLng);
+          map.setView(latLng);
+      }
+
+      // Real-time update simulation (replace this with real data fetching)
+      setInterval(function() {
+          // Fetch new data here (e.g., via AJAX)
+          // Assume you get newLat and newLng from the server
+          var newLat = {{ $perjalanan->gudang->lat }};
+          var newLng = {{ $perjalanan->gudang->lng }};
+
+          // Update the polyline with the new position
+          updatePolyline(newLat, newLng);
+      }, 5000);
+
+      // Button Event Listeners
+      document.getElementById('startJourney').addEventListener('click', function() {
+          alert('Journey Started!');
+          // Tambahkan logika untuk memulai perjalanan di sini
+      });
+
+      document.getElementById('stopJourney').addEventListener('click', function() {
+          alert('Journey Stopped!');
+          // Tambahkan logika untuk menghentikan perjalanan di sini
       });
   });
 </script>
