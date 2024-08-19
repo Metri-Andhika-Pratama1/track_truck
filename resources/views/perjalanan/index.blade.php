@@ -32,7 +32,6 @@
                         <table class="table table-bordered">
                             <thead>
                                 <tr>
-                                    <th>No</th>
                                     <th>Nama Supir</th>
                                     <th>Plat Nomor</th>
                                     <th>Nama Gudang</th>
@@ -46,7 +45,6 @@
                             <tbody>
                                 @foreach($perjalanans as $perjalanan)
                                     <tr>
-                                        <td>{{ $loop->iteration }}</td>
                                         <td>{{ $perjalanan->supir->nama }}</td>
                                         <td>{{ $perjalanan->truk->plat_no }}</td>
                                         <td>{{ $perjalanan->gudang->nama_gudang }}</td>

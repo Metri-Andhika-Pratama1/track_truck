@@ -62,9 +62,9 @@
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col-md-6">
-                                        <h5>Kondisi Minyak:</h5>
-                                        <p>Minyak Awal: {{ $detail->perjalanan->bensin_awal }}%</p>
-                                        <p>Minyak Akhir: {{ $detail->perjalanan->bensin_akhir }}%</p>
+                                        <h5>Kondisi Bensin:</h5>
+                                        <p>Bensin Awal: {{ $detail->perjalanan->bensin_awal }}%</p>
+                                        <p>Bensin Akhir: {{ $detail->minyak }}%</p>
                                     </div>
                                 </div>
                                 <div class="scroll-controls">

@@ -58,9 +58,9 @@
                             </div>
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <h5>Kondisi Minyak:</h5>
-                                    <p>Minyak Awal: {{ $perjalanan->bensin_awal }}%</p>
-                                    <p>Minyak Akhir: {{ $perjalanan->bensin_akhir }}%</p>
+                                    <h5>Kondisi Bensin:</h5>
+                                    <p>Bensin Awal: {{ $perjalanan->bensin_awal }}%</p>
+                                    <p>Bensin Akhir: {{ $perjalanan->bensin_akhir }}%</p>
                                 </div>
                             </div>
 
