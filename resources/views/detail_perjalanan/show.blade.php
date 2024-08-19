@@ -69,10 +69,8 @@
                                 </div>
                                 <div class="scroll-controls">
                                     <a href="{{ route('details.index') }}" class="btn btn-secondary">Kembali</a>
-                                    <button id="scroll-start" onclick="startJourney()" class="btn btn-primary">Start
-                                        Journey</button>
-                                    <button id="scroll-stop" onclick="stopJourney()" class="btn btn-danger">Stop
-                                        Journey</button>
+                                    <button id="scroll-start" onclick="startJourney()" class="btn btn-primary">Start Journey</button>
+                                    <button id="scroll-stop" onclick="stopJourney()" class="btn btn-danger">Stop Journey</button>
                                 </div>
                             </div>
                         </div>
@@ -136,11 +134,12 @@
                 };
             
                 const destinationPoint = {
-                    lat: {{ $detail->perjalanan->lat_tujuan ?? 'null' }},
-                    lng: {{ $detail->perjalanan->lng_tujuan ?? 'null' }}
+                    lat: {{ $detail->perjalanan->gudang->lat ?? 'null' }},
+                    lng: {{ $detail->perjalanan->gudang->lng ?? 'null' }}
                 };
             
                 function initMap() {
+                    // Inisialisasi peta pada lokasi detail
                     map = L.map('map').setView([currentLocation.lat, currentLocation.lng], 12);
             
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -148,6 +147,16 @@
                         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     }).addTo(map);
             
+                    // Inisialisasi marker truk di lokasi detail
+                    currentMarker = L.marker([currentLocation.lat, currentLocation.lng], {
+                        icon: L.divIcon({
+                            className: 'custom-div-icon',
+                            html: '<i class="fas fa-truck" style="font-size: 38px; color: green;"></i>',
+                            iconSize: [30, 42],
+                            iconAnchor: [15, 42]
+                        })
+                    }).addTo(map);
+
                     // Menambahkan marker untuk titik keberangkatan
                     L.marker([departurePoint.lat, departurePoint.lng], {
                         icon: L.divIcon({
@@ -212,98 +221,44 @@
                                 fuelLevelElement.textContent = fuelLevel;
             
                                 // Update warna berdasarkan level bensin
-                                if (fuelLevel <= 10) {
-                                    fuelLevelElement.style.color = 'red';
-                                } else if (fuelLevel <= 30) {
-                                    fuelLevelElement.style.color = 'orange';
-                                } else {
-                                    fuelLevelElement.style.color = 'green';
-                                }
-            
                                 data.setValue(0, 1, fuelLevel);
                                 chart.draw(data, options);
                             });
                         }, 5000);
                     }
                 }
-            
+
+                // Start the journey
                 function startJourney() {
                     if (isJourneyActive) return;
-
                     isJourneyActive = true;
 
-                    currentMarker = L.marker([departurePoint.lat, departurePoint.lng], {
-                        icon: L.divIcon({
-                            className: 'custom-div-icon',
-                            html: '<i class="fas fa-truck" style="font-size: 38px; color: green;"></i>',
-                            iconSize: [30, 42],
-                            iconAnchor: [15, 42]
-                        })
-                    }).addTo(map);
-
-                    routeCoordinates.push([departurePoint.lat, departurePoint.lng]);
-
-                    // Update posisi truk setiap 5 detik
+                    let index = 0;
                     journeyInterval = setInterval(() => {
-                        fetch('/sensor-data', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                            }
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            const { lat, lng } = data;
-                            currentMarker.setLatLng([lat, lng]);
-                            routeCoordinates.push([lat, lng]);
+                        if (index >= routeCoordinates.length) {
+                            stopJourney();
+                            return;
+                        }
 
-                            if (routePolyline) {
-                                map.removeLayer(routePolyline);
-                            }
+                        const { lat, lng } = routeCoordinates[index];
+                        currentMarker.setLatLng([lat, lng]);
+                        map.setView([lat, lng], 12);
 
-                            routePolyline = L.polyline(routeCoordinates, {
-                                color: 'blue',
-                                weight: 5,
-                                opacity: 0.7
-                            }).addTo(map);
-
-                            if (routingControl) {
-                                map.removeControl(routingControl);
-                            }
-
-                            routingControl = L.Routing.control({
-                                waypoints: [
-                                    L.latLng(departurePoint.lat, departurePoint.lng),
-                                    L.latLng(lat, lng),
-                                    L.latLng(destinationPoint.lat, destinationPoint.lng)
-                                ],
-                                routeWhileDragging: true
-                            }).addTo(map);
-                        });
-                    }, 5000);
+                        index++;
+                    }, 1000);
                 }
 
+                // Stop the journey
                 function stopJourney() {
                     if (!isJourneyActive) return;
-
-                    isJourneyActive = false;
                     clearInterval(journeyInterval);
-
-                    if (currentMarker) {
-                        map.removeLayer(currentMarker);
-                    }
-
-                    if (routePolyline) {
-                        map.removeLayer(routePolyline);
-                    }
-
-                    if (routingControl) {
-                        map.removeControl(routingControl);
-                    }
+                    isJourneyActive = false;
                 }
 
-                document.addEventListener('DOMContentLoaded', initMap);
+                // Inisialisasi peta ketika dokumen siap
+                document.addEventListener('DOMContentLoaded', function() {
+                    initMap();
+                });
             </script>
         </div>
     </div>
