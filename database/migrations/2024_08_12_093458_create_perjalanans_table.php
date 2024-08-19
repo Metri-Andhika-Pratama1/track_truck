@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('lat_tujuan');
             $table->string('lng_tujuan');
             $table->string('bensin_awal');
-            $table->string('bensin_akhir');
+            $table->string('bensin_akhir')->nullable();
             $table->timestamps();
         });
     }
