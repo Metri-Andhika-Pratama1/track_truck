@@ -25,14 +25,13 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <a href="{{ route('details.create') }}" class="btn btn-primary">Tambah Data Detail Perjalanan</a>
+                        {{-- <a href="{{ route('details.create') }}" class="btn btn-primary">Tambah Data Detail Perjalanan</a> --}}
                     </div>
                     <!-- /.card-header -->
                     <div class="card-body table-responsive p-0">
                         <table class="table table-bordered">
                             <thead>
                                 <tr>
-                                    <th>No</th>
                                     <th>Latitude</th>
                                     <th>Longitude</th>
                                     <th>Minyak</th>
@@ -42,12 +41,12 @@
                             <tbody>
                                 @foreach ($details as $detail)
                                     <tr>
-                                        <td>{{ $loop->iteration }}</td>
                                         <td>{{ $detail->lat }}</td>
                                         <td>{{ $detail->lng }}</td>
                                         <td>{{ $detail->minyak }}</td>
                                         <td>
-                                            <a href="{{ route('details.show', $detail->id) }}" class="btn btn-info btn-sm">Detail</a>
+                                            {{-- <a href="{{ route('details.show', $detail->id) }}" class="btn btn-info btn-sm">Detail</a> --}}
+                                            {{-- Edit button (can be uncommented if needed) --}}
                                             {{-- <a href="{{ route('details.edit', $detail->id) }}" class="btn btn-warning btn-sm">Edit</a> --}}
                                             <form action="{{ route('details.destroy', $detail->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus detail perjalanan ini?');">
                                                 @csrf

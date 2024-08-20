@@ -20,32 +20,26 @@ class Perjalanan extends Model
         'lat_tujuan',
         'lng_tujuan',
         'bensin_awal',
-        'bensin_akhir'
+        'bensin_akhir',
     ];
 
-    // Relasi ke model Supir
     public function supir()
     {
-        return $this->belongsTo(Supir::class);
+        return $this->belongsTo(Supir::class, 'supir_id');
     }
 
-    // Relasi ke model Truk
     public function truk()
     {
-        return $this->belongsTo(Truk::class);
+        return $this->belongsTo(Truk::class, 'truk_id');
     }
 
-    // Relasi ke model Gudang
     public function gudang()
     {
-        return $this->belongsTo(Gudang::class);
+        return $this->belongsTo(Gudang::class, 'gudang_id');
     }
 
-    // Relasi ke model DetailPerjalanan
-    public function details()
+    public function detail_perjalanans()
     {
         return $this->hasMany(DetailPerjalanan::class, 'perjalanan_id');
     }
-
-    
 }

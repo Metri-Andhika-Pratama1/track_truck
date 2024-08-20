@@ -9,26 +9,17 @@ class DetailPerjalanan extends Model
 {
     use HasFactory;
 
-    // Kolom yang dapat diisi massal
+    protected $table = 'detail_perjalanans';
+
     protected $fillable = [
         'perjalanan_id',
         'lat',
         'lng',
-        'minyak'
+        'minyak',
     ];
 
-    // Mengonversi tipe data atribut
-    protected $casts = [
-        'lat' => 'float',
-        'lng' => 'float',
-        'minyak' => 'float', // Jika minyak adalah angka
-    ];
-
-    // Relasi ke model Perjalanan
     public function perjalanan()
     {
-        return $this->belongsTo(Perjalanan::class);
+        return $this->belongsTo(Perjalanan::class, 'perjalanan_id');
     }
-    
- 
 }

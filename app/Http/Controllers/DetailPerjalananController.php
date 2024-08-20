@@ -13,42 +13,15 @@ class DetailPerjalananController extends Controller
 {
     public function index()
     {
-        // Mengambil ID perjalanan yang unik
-        $perjalananIds = DetailPerjalanan::pluck('perjalanan_id')->unique();
+        // Retrieve all DetailPerjalanan records with pagination
+        $details = DetailPerjalanan::with('perjalanan')->paginate(10); // 10 items per page
 
-        // Mendapatkan data pertama dan terakhir untuk setiap perjalanan_id
-        $details = collect();
-        foreach ($perjalananIds as $perjalananId) {
-            $first = DetailPerjalanan::where('perjalanan_id', $perjalananId)
-                ->orderBy('id', 'asc') // Menggunakan ID sebagai pengganti timestamp
-                ->first();
-                
-            $last = DetailPerjalanan::where('perjalanan_id', $perjalananId)
-                ->orderBy('id', 'desc') // Menggunakan ID sebagai pengganti timestamp
-                ->first();
-                
-            if ($first) {
-                $details->push($first);
-            }
-            if ($last && $last->id !== $first->id) {
-                $details->push($last);
-            }
-        }
-        
-        // Paginate the results
-        $currentPage = LengthAwarePaginator::resolveCurrentPage();
-        $perPage = 10; // Number of items per page
-        $currentItems = $details->slice(($currentPage - 1) * $perPage, $perPage)->all();
-        $details = new LengthAwarePaginator($currentItems, $details->count(), $perPage, $currentPage, [
-            'path' => LengthAwarePaginator::resolveCurrentPath(),
-        ]);
-        
         return view('detail_perjalanan.index', compact('details'));
     }
 
     public function create()
     {
-        $perjalanans = Perjalanan::all(); // Mengambil data perjalanan
+        $perjalanans = Perjalanan::all(); // Retrieve all Perjalanan records
         return view('detail_perjalanan.create', compact('perjalanans'));
     }
 
@@ -75,9 +48,9 @@ class DetailPerjalananController extends Controller
             $lat = $request->input('lat');
             $lng = $request->input('lng');
             $persentaseBahanBakar = $request->input('persentase_bahan_bakar');
-            $timestamp = $request->input('timestamp') ?? now()->toDateTimeString();  // Gunakan waktu server jika tidak tersedia
+            $timestamp = $request->input('timestamp') ?? now()->toDateTimeString(); // Use server time if not provided
 
-            // Validasi data
+            // Validate data
             $request->validate([
                 'perjalanan_id' => 'required|exists:perjalanans,id',
                 'lat' => 'nullable|numeric',
@@ -86,25 +59,25 @@ class DetailPerjalananController extends Controller
                 'timestamp' => 'nullable|string',
             ]);
 
-            // Cache data sementara berdasarkan perjalanan_id
+            // Temporary cache data based on perjalanan_id
             $cacheKey = 'sensor_data_' . $perjalananId;
             $cachedData = Cache::get($cacheKey, []);
 
             if ($lat !== null && $lng !== null) {
-                // Simpan data GPS sementara
+                // Store GPS data temporarily
                 $cachedData['lat'] = $lat;
                 $cachedData['lng'] = $lng;
             }
 
             if ($persentaseBahanBakar !== null) {
-                // Simpan data bahan bakar sementara
+                // Store fuel data temporarily
                 $cachedData['persentase_bahan_bakar'] = $persentaseBahanBakar;
             }
 
-            // Perbarui cache dengan data terbaru
+            // Update cache with latest data
             Cache::put($cacheKey, $cachedData, now()->addMinutes(5));
 
-            // Jika semua data telah terkumpul, simpan ke database
+            // Save to database if all data is collected
             if (isset($cachedData['lat']) && isset($cachedData['lng']) && isset($cachedData['persentase_bahan_bakar'])) {
                 DetailPerjalanan::create([
                     'perjalanan_id' => $perjalananId,
@@ -114,21 +87,21 @@ class DetailPerjalananController extends Controller
                     'timestamp' => $timestamp
                 ]);
 
-                // Hapus cache setelah data disimpan
+                // Remove cache after saving
                 Cache::forget($cacheKey);
 
-                Log::info('Data sensor berhasil disimpan:', $cachedData);
+                Log::info('Data sensor successfully saved:', $cachedData);
 
-                return response()->json(['message' => 'Data berhasil disimpan'], 201);
+                return response()->json(['message' => 'Data successfully saved'], 201);
             } else {
-                return response()->json(['message' => 'Data belum lengkap, menunggu data lain'], 202);
+                return response()->json(['message' => 'Data incomplete, waiting for other data'], 202);
             }
         } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Data sensor gagal divalidasi:', ['errors' => $e->errors()]);
-            return response()->json(['error' => 'Data gagal divalidasi', 'details' => $e->errors()], 422);
+            Log::error('Sensor data validation failed:', ['errors' => $e->errors()]);
+            return response()->json(['error' => 'Data validation failed', 'details' => $e->errors()], 422);
         } catch (\Exception $e) {
-            Log::error('Data sensor gagal disimpan:', ['error' => $e->getMessage()]);
-            return response()->json(['error' => 'Data gagal disimpan: ' . $e->getMessage()], 500);
+            Log::error('Failed to save sensor data:', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to save data: ' . $e->getMessage()], 500);
         }
     }
 
@@ -174,7 +147,7 @@ class DetailPerjalananController extends Controller
     {
         try {
             $latestDetail = DetailPerjalanan::where('perjalanan_id', $perjalananId)
-                                            ->orderBy('id', 'desc') // Menggunakan ID sebagai pengganti timestamp
+                                            ->orderBy('id', 'desc') // Using ID as a substitute for timestamp
                                             ->first();
 
             if ($latestDetail) {
@@ -185,9 +158,9 @@ class DetailPerjalananController extends Controller
                 ]);
             }
 
-            return response()->json(['error' => 'Data tidak ditemukan'], 404);
+            return response()->json(['error' => 'Data not found'], 404);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+            return response()->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
         }
     }
 }

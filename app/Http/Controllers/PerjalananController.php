@@ -11,154 +11,99 @@ use Illuminate\Http\Request;
 
 class PerjalananController extends Controller
 {
-    /**
-     * Menampilkan daftar semua Perjalanan.
-     */
+    // Metode untuk menampilkan daftar perjalanan
     public function index()
     {
-        $perjalanans = Perjalanan::with(['supir', 'truk', 'gudang'])->paginate(10);
-        
+        $perjalanans = Perjalanan::paginate(10);
         return view('perjalanan.index', compact('perjalanans'));
     }
 
-    /**
-     * Menampilkan form untuk membuat Perjalanan baru.
-     */
+    // Metode untuk menampilkan form pembuatan perjalanan
     public function create()
     {
-        $supirs = Supir::all(); // Mengambil data supir
-        $truks = Truk::all(); // Mengambil data truk
-        $gudangs = Gudang::all(); // Mengambil data gudang
+        $supirs = Supir::all();
+        $truks = Truk::all();
+        $gudangs = Gudang::all();
         return view('perjalanan.create', compact('supirs', 'truks', 'gudangs'));
     }
 
-    /**
-     * Menyimpan Perjalanan baru ke database.
-     */
+    // Metode untuk menyimpan data perjalanan baru
     public function store(Request $request)
     {
         $request->validate([
             'supir_id' => 'required|exists:supirs,id',
             'truk_id' => 'required|exists:truks,id',
             'gudang_id' => 'required|exists:gudangs,id',
-            'lat_berangkat' => 'required|numeric|between:-90,90',
-            'lng_berangkat' => 'required|numeric|between:-180,180',
-            'lat_tujuan' => 'required|numeric|between:-90,90',
-            'lng_tujuan' => 'required|numeric|between:-180,180',
-            'bensin_awal' => 'required|numeric|min:0|max:100', // Pastikan dalam persen
-            'bensin_akhir' => 'nullable|numeric|min:0|max:100', // Pastikan dalam persen
+            'lat_berangkat' => 'required|numeric',
+            'lng_berangkat' => 'required|numeric',
+            'lat_tujuan' => 'required|numeric',
+            'lng_tujuan' => 'required|numeric',
+            'bensin_awal' => 'required|numeric',
+            'bensin_akhir' => 'required|numeric',
         ]);
 
         Perjalanan::create($request->only([
-            'supir_id', 'truk_id', 'gudang_id', 'lat_berangkat', 'lng_berangkat',
-            'lat_tujuan', 'lng_tujuan', 'bensin_awal', 'bensin_akhir'
+            'supir_id', 'truk_id', 'gudang_id', 'lat_berangkat', 'lng_berangkat', 'lat_tujuan', 'lng_tujuan', 'bensin_awal', 'bensin_akhir'
         ]));
 
         return redirect()->route('perjalanan.index')->with('success', 'Perjalanan berhasil ditambahkan.');
     }
 
-    /**
-     * Menampilkan detail dari Perjalanan yang spesifik.
-     */
+    // Metode untuk menampilkan detail perjalanan
     public function show($id)
-{
-    $perjalanan = Perjalanan::with(['supir', 'truk', 'gudang', 'details'])->findOrFail($id);
-
-    // Mengelompokkan detail perjalanan untuk menampilkan data awal dan akhir
-    $details = $perjalanan->details->groupBy('perjalanan_id')->map(function ($group) {
-        $first = $group->first(); // Data awal
-        $last = $group->last();   // Data akhir
-        return [
-            'supir_nama' => $first->perjalanan->supir->nama ?? 'Tidak Ada',
-            'plat_no' => $first->perjalanan->truk->plat_no ?? 'Tidak Ada',
-            'lat_awal' => $first->lat,
-            'lng_awal' => $first->lng,
-            'lat_akhir' => $last->lat,
-            'lng_akhir' => $last->lng,
-            'minyak_awal' => $first->minyak,
-            'minyak_akhir' => $last->minyak,
-        ];
-    });
-
-    // Mengambil data perjalanan untuk grafik
-    $perjalanans = Perjalanan::select('id', 'bensin_awal', 'bensin_akhir')->get();
-    $labels = $perjalanans->pluck('id');
-    $bensinAwal = $perjalanans->pluck('bensin_awal');
-    $bensinAkhir = $perjalanans->pluck('bensin_akhir');
-
-    return view('perjalanan.show', [
-        'perjalanan' => $perjalanan,
-        'details' => $details,
-        'labels' => $labels,
-        'bensinAwal' => $bensinAwal,
-        'bensinAkhir' => $bensinAkhir
-    ]);
-}
-
-        /**
-     * Menampilkan grafik bensin awal dan akhir.
-     */
-    public function grafik()
     {
-        $perjalanan = Perjalanan::select('id', 'bensin_awal', 'bensin_akhir')->get();
-        
-        $labels = $perjalanan->pluck('id');
-        $bensinAwal = $perjalanan->pluck('bensin_awal');
-        $bensinAkhir = $perjalanan->pluck('bensin_akhir');
+        $perjalanan = Perjalanan::findOrFail($id);
 
-        return view('dashboard', [
-            'labels' => $labels,
-            'bensinAwal' => $bensinAwal,
-            'bensinAkhir' => $bensinAkhir,
+        // Ambil data bahan bakar terakhir dari detail perjalanan
+        $latestDetail = $perjalanan->detail_perjalanans()->latest()->first();
+        $lat_berangkat = $latestDetail ? $latestDetail->lat : $perjalanan->lat_berangkat;
+        $lng_berangkat = $latestDetail ? $latestDetail->lng : $perjalanan->lng_berangkat;
+        $bensin_akhir = $latestDetail ? $latestDetail->minyak : 'Tidak Ada';
+
+        return view('perjalanan.show', [
+            'perjalanan' => $perjalanan,
+            'bensin_akhir' => $bensin_akhir,
+            'lat_awal' => $lat_berangkat,
+            'lng_awal' => $lng_berangkat,
+            'lat_akhir' => $perjalanan->lat_tujuan,
+            'lng_akhir' => $perjalanan->lng_tujuan,
         ]);
     }
 
-    /**
-     * Menampilkan form untuk mengedit Perjalanan yang spesifik.
-     */
+    // Metode untuk menampilkan form edit perjalanan
     public function edit($id)
-{
-    $perjalanan = Perjalanan::findOrFail($id);
-    $supirs = Supir::all();
-    $truks = Truk::all();
-    $gudangs = Gudang::all();
-    
-    // Mengambil data minyak yang terkait dengan perjalanan
-    $minyak = DetailPerjalanan::where('perjalanan_id', $id)->first(); // Sesuaikan dengan relasi yang Anda punya
-    
-    return view('perjalanan.edit', compact('perjalanan', 'supirs', 'truks', 'gudangs', 'minyak'));
-}
+    {
+        $perjalanan = Perjalanan::findOrFail($id);
+        $supirs = Supir::all();
+        $truks = Truk::all();
+        $gudangs = Gudang::all();
+        return view('perjalanan.edit', compact('perjalanan', 'supirs', 'truks', 'gudangs'));
+    }
 
-
-    /**
-     * Memperbarui Perjalanan yang spesifik di database.
-     */
+    // Metode untuk memperbarui data perjalanan
     public function update(Request $request, $id)
     {
         $request->validate([
             'supir_id' => 'required|exists:supirs,id',
             'truk_id' => 'required|exists:truks,id',
             'gudang_id' => 'required|exists:gudangs,id',
-            'lat_berangkat' => 'required|numeric|between:-90,90',
-            'lng_berangkat' => 'required|numeric|between:-180,180',
-            'lat_tujuan' => 'required|numeric|between:-90,90',
-            'lng_tujuan' => 'required|numeric|between:-180,180',
-            'bensin_awal' => 'required|numeric|min:0|max:100', // Pastikan dalam persen
-            'bensin_akhir' => 'nullable|numeric|min:0|max:100', // Pastikan dalam persen
+            'lat_berangkat' => 'required|numeric',
+            'lng_berangkat' => 'required|numeric',
+            'lat_tujuan' => 'required|numeric',
+            'lng_tujuan' => 'required|numeric',
+            'bensin_awal' => 'required|numeric',
+            'bensin_akhir' => 'required|numeric',
         ]);
 
         $perjalanan = Perjalanan::findOrFail($id);
         $perjalanan->update($request->only([
-            'supir_id', 'truk_id', 'gudang_id', 'lat_berangkat', 'lng_berangkat',
-            'lat_tujuan', 'lng_tujuan', 'bensin_awal', 'bensin_akhir'
+            'supir_id', 'truk_id', 'gudang_id', 'lat_berangkat', 'lng_berangkat', 'lat_tujuan', 'lng_tujuan', 'bensin_awal', 'bensin_akhir'
         ]));
 
         return redirect()->route('perjalanan.index')->with('success', 'Perjalanan berhasil diperbarui.');
     }
 
-    /**
-     * Menghapus Perjalanan yang spesifik dari database.
-     */
+    // Metode untuk menghapus data perjalanan
     public function destroy($id)
     {
         $perjalanan = Perjalanan::findOrFail($id);
@@ -167,12 +112,42 @@ class PerjalananController extends Controller
         return redirect()->route('perjalanan.index')->with('success', 'Perjalanan berhasil dihapus.');
     }
 
-    public function printPerjalanan($id)
+    // Metode untuk mendapatkan data terbaru dari DetailPerjalanan
+    public function getRealTimeData($id)
     {
-        $detail = DetailPerjalanan::with(['perjalanan.supir', 'perjalanan.truk', 'perjalanan.gudang'])
-            ->where('id', $id)
-            ->firstOrFail();
+        try {
+            $perjalanan = Perjalanan::findOrFail($id);
 
-        return view('cetak.print_perjalanan', compact('detail'));
+            $latestDetail = DetailPerjalanan::where('perjalanan_id', $id)
+                ->orderBy('id', 'desc')
+                ->first();
+
+            if ($latestDetail) {
+                return response()->json([
+                    'perjalanan_id' => $perjalanan->id,
+                    'nama_supir' => $perjalanan->supir->nama ?? 'Tidak Ada',
+                    'plat_nomor_truk' => $perjalanan->truk->plat_no ?? 'Tidak Ada',
+                    'nama_gudang' => $perjalanan->gudang->nama_gudang ?? 'Tidak Ada',
+                    'titik_berangkat' => [
+                        'lat' => $latestDetail->lat,
+                        'lng' => $latestDetail->lng
+                    ],
+                    'titik_tujuan' => [
+                        'lat' => $perjalanan->lat_tujuan,
+                        'lng' => $perjalanan->lng_tujuan
+                    ],
+                    'detail_perjalanan' => [
+                        'lat' => $latestDetail->lat,
+                        'lng' => $latestDetail->lng,
+                        'persentase_bahan_bakar' => $latestDetail->minyak,
+                        'timestamp' => $latestDetail->created_at
+                    ]
+                ]);
+            }
+
+            return response()->json(['error' => 'Data tidak ditemukan'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+        }
     }
 }

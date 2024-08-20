@@ -29,46 +29,46 @@
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header">
-                                <h3 class="card-title">Perjalanan #{{ $detail->perjalanan->id }}</h3>
+                                <h3 class="card-title">Perjalanan #{{ $detail->perjalanan->id ?? 'N/A' }}</h3>
                             </div>
                             <div class="card-body">
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <h5>Nama Supir:</h5>
-                                        <p>{{ $detail->perjalanan->supir->nama }}</p>
+                                        <p>{{ $detail->perjalanan->supir->nama ?? 'N/A' }}</p>
                                     </div>
                                     <div class="col-md-6">
                                         <h5>Plat Nomor Truk:</h5>
-                                        <p>{{ $detail->perjalanan->truk->plat_no }}</p>
+                                        <p>{{ $detail->perjalanan->truk->plat_no ?? 'N/A' }}</p>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <h5>Gudang Tujuan:</h5>
-                                        <p>{{ $detail->perjalanan->gudang->nama_gudang }}</p>
+                                        <p>{{ $detail->perjalanan->gudang->nama_gudang ?? 'N/A' }}</p>
                                     </div>
                                     <div class="col-md-6">
                                         <h5>Titik Berangkat:</h5>
-                                        <p>Lat: {{ $detail->perjalanan->lat_berangkat }}, Lng:
-                                            {{ $detail->perjalanan->lng_berangkat }}</p>
+                                        <p>Lat: {{ $detail->perjalanan->lat_berangkat ?? 'N/A' }}, Lng:
+                                            {{ $detail->perjalanan->lng_berangkat ?? 'N/A' }}</p>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <h5>Titik Tujuan:</h5>
-                                        <p>Lat: {{ $detail->perjalanan->gudang->lat }}, Lng:
-                                            {{ $detail->perjalanan->gudang->lng }}</p>
+                                        <p>Lat: {{ $detail->perjalanan->gudang->lat ?? 'N/A' }}, Lng:
+                                            {{ $detail->perjalanan->gudang->lng ?? 'N/A' }}</p>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <h5>Kondisi Bensin:</h5>
-                                        <p>Bensin Awal: {{ $detail->perjalanan->bensin_awal }}%</p>
-                                        <p>Bensin Akhir: {{ $detail->minyak }}%</p>
+                                        <p>Bensin Awal: {{ $detail->perjalanan->bensin_awal ?? 'N/A' }}%</p>
+                                        <p>Bensin Akhir: <span id="fuel-level">{{ $detail->minyak ?? 'N/A' }}</span>%</p>
                                     </div>
                                 </div>
                                 <div class="scroll-controls">
-                                    <a href="{{ route('details.index') }}" class="btn btn-secondary">Kembali</a>
+                                    <a href="{{ route('perjalanan.index') }}" class="btn btn-secondary">Kembali</a>
                                     <button id="scroll-start" onclick="startJourney()" class="btn btn-primary">Start Journey</button>
                                     <button id="scroll-stop" onclick="stopJourney()" class="btn btn-danger">Stop Journey</button>
                                 </div>
@@ -102,7 +102,7 @@
                                 </div>
                                 <div id="fuel-level-data" class="fuel-content">
                                     <div class="text-section" style="text-align: center">
-                                        <h5>Persentase: <span id="fuel-level">{{ $detail->minyak ?? '0' }}</span>%</h5>
+                                        <h5>Persentase: <span id="fuel-level">{{ $detail->minyak ?? 'N/A' }}</span>%</h5>
                                     </div>
                                 </div>
                             </div>
@@ -119,36 +119,19 @@
                 let journeyInterval;
                 let currentMarker;
                 let routeCoordinates = [];
-                let routePolyline;
-                let routingControl;
                 let isJourneyActive = false;
-            
-                const currentLocation = {
-                    lat: {{ $detail->lat ?? 'null' }},
-                    lng: {{ $detail->lng ?? 'null' }}
-                };
-            
-                const departurePoint = {
-                    lat: {{ $detail->perjalanan->lat_berangkat ?? 'null' }},
-                    lng: {{ $detail->perjalanan->lng_berangkat ?? 'null' }}
-                };
-            
-                const destinationPoint = {
-                    lat: {{ $detail->perjalanan->gudang->lat ?? 'null' }},
-                    lng: {{ $detail->perjalanan->gudang->lng ?? 'null' }}
-                };
-            
+                const mapElement = document.getElementById('map');
+                const fuelLevelElement = document.getElementById('fuel-level');
+
                 function initMap() {
-                    // Inisialisasi peta pada lokasi detail
-                    map = L.map('map').setView([currentLocation.lat, currentLocation.lng], 12);
-            
+                    map = L.map(mapElement).setView([{{ $detail->lat ?? '0' }}, {{ $detail->lng ?? '0' }}], 12);
+
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     }).addTo(map);
-            
-                    // Inisialisasi marker truk di lokasi detail
-                    currentMarker = L.marker([currentLocation.lat, currentLocation.lng], {
+
+                    currentMarker = L.marker([{{ $detail->lat ?? '0' }}, {{ $detail->lng ?? '0' }}], {
                         icon: L.divIcon({
                             className: 'custom-div-icon',
                             html: '<i class="fas fa-truck" style="font-size: 38px; color: green;"></i>',
@@ -157,8 +140,7 @@
                         })
                     }).addTo(map);
 
-                    // Menambahkan marker untuk titik keberangkatan
-                    L.marker([departurePoint.lat, departurePoint.lng], {
+                    L.marker([{{ $detail->perjalanan->lat_berangkat ?? '0' }}, {{ $detail->perjalanan->lng_berangkat ?? '0' }}], {
                         icon: L.divIcon({
                             className: 'custom-div-icon',
                             html: '<i class="fas fa-map-marker-alt" style="font-size: 38px; color: blue;"></i>',
@@ -166,9 +148,8 @@
                             iconAnchor: [15, 42]
                         })
                     }).addTo(map);
-            
-                    // Menambahkan marker untuk titik tujuan
-                    L.marker([destinationPoint.lat, destinationPoint.lng], {
+
+                    L.marker([{{ $detail->perjalanan->gudang->lat ?? '0' }}, {{ $detail->perjalanan->gudang->lng ?? '0' }}], {
                         icon: L.divIcon({
                             className: 'custom-div-icon',
                             html: '<i class="fas fa-flag-checkered" style="font-size: 30px; color: red;"></i>',
@@ -176,19 +157,18 @@
                             iconAnchor: [15, 42]
                         })
                     }).addTo(map);
-            
-                    // Inisialisasi gauge chart
+
                     google.charts.load('current', {
                         'packages': ['gauge']
                     });
                     google.charts.setOnLoadCallback(drawGauge);
-            
+
                     function drawGauge() {
                         const data = google.visualization.arrayToDataTable([
                             ['Label', 'Value'],
-                            ['Fuel Level', {{ $detail->minyak ?? 0 }}]
+                            ['Fuel Level', parseFloat(fuelLevelElement.textContent) || 0]
                         ]);
-            
+
                         const options = {
                             width: 400,
                             height: 120,
@@ -200,62 +180,46 @@
                             greenTo: 100,
                             minorTicks: 5
                         };
-            
+
                         const chart = new google.visualization.Gauge(document.getElementById('gauge_chart'));
                         chart.draw(data, options);
-            
-                        // Update gauge setiap 5 detik
+
+                        // Fetch and update gauge every 5 seconds
                         setInterval(() => {
-                            fetch('/sensor-data', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                                }
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                                const fuelLevel = data.fuelLevel; // Sesuaikan dengan data yang diterima
-                                const fuelLevelElement = document.getElementById('fuel-level');
-            
-                                fuelLevelElement.textContent = fuelLevel;
-            
-                                // Update warna berdasarkan level bensin
-                                data.setValue(0, 1, fuelLevel);
-                                chart.draw(data, options);
-                            });
+                            fetch('/detail-perjalanan/latest/{{ $detail->perjalanan->id ?? '' }}')
+                                .then(response => response.json())
+                                .then(data => {
+                                    const fuelLevel = data.persentase_bahan_bakar;
+                                    fuelLevelElement.textContent = fuelLevel;
+
+                                    data.setValue(0, 1, fuelLevel);
+                                    chart.draw(data, options);
+                                });
                         }, 5000);
                     }
                 }
 
-                // Start the journey
                 function startJourney() {
                     if (isJourneyActive) return;
                     isJourneyActive = true;
 
-                    let index = 0;
                     journeyInterval = setInterval(() => {
-                        if (index >= routeCoordinates.length) {
-                            stopJourney();
-                            return;
-                        }
-
-                        const { lat, lng } = routeCoordinates[index];
-                        currentMarker.setLatLng([lat, lng]);
-                        map.setView([lat, lng], 12);
-
-                        index++;
+                        fetch('/detail-perjalanan/latest/{{ $detail->perjalanan->id ?? '' }}')
+                            .then(response => response.json())
+                            .then(data => {
+                                const { lat, lng } = data;
+                                currentMarker.setLatLng([lat, lng]);
+                                map.setView([lat, lng], 12);
+                            });
                     }, 1000);
                 }
 
-                // Stop the journey
                 function stopJourney() {
                     if (!isJourneyActive) return;
                     clearInterval(journeyInterval);
                     isJourneyActive = false;
                 }
 
-                // Inisialisasi peta ketika dokumen siap
                 document.addEventListener('DOMContentLoaded', function() {
                     initMap();
                 });
