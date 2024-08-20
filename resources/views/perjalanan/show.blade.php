@@ -49,7 +49,8 @@
                                     </div>
                                     <div class="col-md-6">
                                         <h5>Titik Berangkat:</h5>
-                                        <p>Lat: {{ $lat_awal ?? $perjalanan->lat_berangkat }}, Lng: {{ $lng_awal ?? $perjalanan->lng_berangkat }}</p>
+                                        <p>Lat: {{ $lat_awal ?? $perjalanan->lat_berangkat }}, Lng:
+                                            {{ $lng_awal ?? $perjalanan->lng_berangkat }}</p>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
@@ -62,13 +63,16 @@
                                     <div class="col-md-6">
                                         <h5>Kondisi Bensin:</h5>
                                         <p>Bensin Awal: {{ $perjalanan->bensin_awal ?? 'Tidak Ada' }}%</p>
-                                        <p>Bensin Akhir: <span id="fuel-level">{{ $bensin_akhir ?? 'Tidak Ada' }}</span>%</p>
+                                        <p>Bensin Akhir: <span id="fuel-level">{{ $bensin_akhir ?? 'Tidak Ada' }}</span>%
+                                        </p>
                                     </div>
                                 </div>
                                 <div class="scroll-controls">
                                     <a href="{{ route('perjalanan.index') }}" class="btn btn-secondary">Kembali</a>
-                                    <button id="scroll-start" onclick="startJourney()" class="btn btn-primary">Start Journey</button>
-                                    <button id="scroll-stop" onclick="stopJourney()" class="btn btn-danger">Stop Journey</button>
+                                    <button id="scroll-start" onclick="startJourney()" class="btn btn-primary">Start
+                                        Journey</button>
+                                    <button id="scroll-stop" onclick="stopJourney()" class="btn btn-danger">Stop
+                                        Journey</button>
                                 </div>
                             </div>
                         </div>
@@ -100,7 +104,8 @@
                                 </div>
                                 <div id="fuel-level-data" class="fuel-content">
                                     <div class="text-section" style="text-align: center">
-                                        <h5>Persentase: <span id="fuel-level">{{ $bensin_akhir ?? 'Tidak Ada' }}</span>%</h5>
+                                        <h5>Persentase: <span id="fuel-level">{{ $bensin_akhir ?? 'Tidak Ada' }}</span>%
+                                        </h5>
                                     </div>
                                 </div>
                             </div>
@@ -127,14 +132,18 @@
             const fuelLevelElement = document.getElementById('fuel-level');
 
             function initMap() {
-                map = L.map(mapElement).setView([{{ $lat_awal ?? $perjalanan->lat_berangkat }}, {{ $lng_awal ?? $perjalanan->lng_berangkat }}], 13);
+                map = L.map(mapElement).setView([{{ $lat_awal ?? $perjalanan->lat_berangkat }},
+                    {{ $lng_awal ?? $perjalanan->lng_berangkat }}
+                ], 13);
 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 }).addTo(map);
 
-                currentMarker = L.marker([{{ $lat_awal ?? $perjalanan->lat_berangkat }}, {{ $lng_awal ?? $perjalanan->lng_berangkat }}], {
+                currentMarker = L.marker([{{ $lat_awal ?? $perjalanan->lat_berangkat }},
+                    {{ $lng_awal ?? $perjalanan->lng_berangkat }}
+                ], {
                     icon: L.divIcon({
                         className: 'custom-div-icon',
                         html: '<i class="fas fa-truck" style="font-size: 38px; color: green;"></i>',
@@ -161,7 +170,9 @@
                     })
                 }).addTo(map);
 
-                google.charts.load('current', { 'packages': ['gauge'] });
+                google.charts.load('current', {
+                    'packages': ['gauge']
+                });
                 google.charts.setOnLoadCallback(drawGauge);
 
                 function drawGauge() {
@@ -193,37 +204,76 @@
                                 const fuelLevel = data.persentase_bahan_bakar;
                                 fuelLevelElement.textContent = fuelLevel;
 
+                                // Set color based on fuel level
+                                setFuelLevelColor(fuelLevel);
+
+                                // Update gauge
                                 data.setValue(0, 1, fuelLevel);
                                 chart.draw(data, options);
                             });
                     }, 5000);
                 }
+
+                function setFuelLevelColor(fuelLevel) {
+                    if (fuelLevel <= 10) {
+                        fuelLevelElement.className = 'low-fuel';
+                    } else if (fuelLevel <= 30) {
+                        fuelLevelElement.className = 'medium-fuel';
+                    } else {
+                        fuelLevelElement.className = 'high-fuel';
+                    }
+                }
             }
 
             function startJourney() {
-                if (isJourneyActive) return;
-                isJourneyActive = true;
-
-                journeyInterval = setInterval(() => {
-                    fetch('/detail-perjalanan/latest/{{ $perjalanan->id }}')
-                        .then(response => response.json())
-                        .then(data => {
-                            const { lat, lng } = data;
-                            currentMarker.setLatLng([lat, lng]);
-                            map.setView([lat, lng], 12);
-                        });
-                }, 1000);
+                if (!isJourneyActive) {
+                    journeyInterval = setInterval(fetchJourneyData, 5000);
+                    isJourneyActive = true;
+                }
             }
 
             function stopJourney() {
-                if (!isJourneyActive) return;
-                clearInterval(journeyInterval);
-                isJourneyActive = false;
+                if (isJourneyActive) {
+                    clearInterval(journeyInterval);
+                    isJourneyActive = false;
+                }
             }
 
-            document.addEventListener('DOMContentLoaded', function() {
-                initMap();
-            });
+            function fetchJourneyData() {
+                fetch('/perjalanan/' + {{ $perjalanan->id }} + '/data')
+                    .then(response => response.json())
+                    .then(data => {
+                        const { lat, lng, persentase_bahan_bakar } = data;
+                        currentMarker.setLatLng([lat, lng]);
+                        map.setView([lat, lng]);
+
+                        // Update gauge
+                        const gaugeData = google.visualization.arrayToDataTable([
+                            ['Label', 'Value'],
+                            ['Fuel Level', persentase_bahan_bakar]
+                        ]);
+                        drawGauge(gaugeData);
+                    });
+            }
+
+            function drawGauge(data) {
+                const options = {
+                    width: 400,
+                    height: 120,
+                    redFrom: 0,
+                    redTo: 10,
+                    yellowFrom: 10,
+                    yellowTo: 30,
+                    greenFrom: 30,
+                    greenTo: 100,
+                    minorTicks: 5
+                };
+
+                const chart = new google.visualization.Gauge(document.getElementById('gauge_chart'));
+                chart.draw(data, options);
+            }
+
+            window.onload = initMap;
         </script>
     </div>
 @endsection
