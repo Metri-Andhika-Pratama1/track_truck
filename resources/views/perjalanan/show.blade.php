@@ -121,6 +121,10 @@
         <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="https://www.gstatic.com/charts/loader.js"></script>
+        <!-- Add this to your HTML head or body -->
+        <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+
 
         <!-- JavaScript -->
         <script>
@@ -130,6 +134,18 @@
             let isJourneyActive = false;
             const mapElement = document.getElementById('map');
             const fuelLevelElement = document.getElementById('fuel-level');
+            const gaugeChartElement = document.getElementById('gauge_chart');
+
+            let polyline;
+            let routingControl;
+            let routeCoords = [];
+
+            // Traffic condition icons
+            const icons = {
+                heavy: '<i class="fas fa-truck" style="font-size: 38px; color: red;"></i>',
+                moderate: '<i class="fas fa-truck" style="font-size: 38px; color: orange;"></i>',
+                light: '<i class="fas fa-truck" style="font-size: 38px; color: green;"></i>',
+            };
 
             function initMap() {
                 map = L.map(mapElement).setView([{{ $lat_awal ?? $perjalanan->lat_berangkat }},
@@ -141,17 +157,19 @@
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 }).addTo(map);
 
+                // Initialize the marker
                 currentMarker = L.marker([{{ $lat_awal ?? $perjalanan->lat_berangkat }},
                     {{ $lng_awal ?? $perjalanan->lng_berangkat }}
                 ], {
                     icon: L.divIcon({
                         className: 'custom-div-icon',
-                        html: '<i class="fas fa-truck" style="font-size: 38px; color: green;"></i>',
+                        html: icons.light, // Default icon
                         iconSize: [30, 42],
                         iconAnchor: [15, 42]
                     })
                 }).addTo(map);
 
+                // Add other markers
                 L.marker([{{ $perjalanan->lat_berangkat }}, {{ $perjalanan->lng_berangkat }}], {
                     icon: L.divIcon({
                         className: 'custom-div-icon',
@@ -174,89 +192,14 @@
                     'packages': ['gauge']
                 });
                 google.charts.setOnLoadCallback(drawGauge);
-
-                function drawGauge() {
-                    const data = google.visualization.arrayToDataTable([
-                        ['Label', 'Value'],
-                        ['Fuel Level', parseFloat(fuelLevelElement.textContent) || 0]
-                    ]);
-
-                    const options = {
-                        width: 400,
-                        height: 120,
-                        redFrom: 0,
-                        redTo: 10,
-                        yellowFrom: 10,
-                        yellowTo: 30,
-                        greenFrom: 30,
-                        greenTo: 100,
-                        minorTicks: 5
-                    };
-
-                    const chart = new google.visualization.Gauge(document.getElementById('gauge_chart'));
-                    chart.draw(data, options);
-
-                    // Fetch and update gauge every 5 seconds
-                    setInterval(() => {
-                        fetch('/detail-perjalanan/latest/{{ $perjalanan->id }}')
-                            .then(response => response.json())
-                            .then(data => {
-                                const fuelLevel = data.persentase_bahan_bakar;
-                                fuelLevelElement.textContent = fuelLevel;
-
-                                // Set color based on fuel level
-                                setFuelLevelColor(fuelLevel);
-
-                                // Update gauge
-                                data.setValue(0, 1, fuelLevel);
-                                chart.draw(data, options);
-                            });
-                    }, 5000);
-                }
-
-                function setFuelLevelColor(fuelLevel) {
-                    if (fuelLevel <= 10) {
-                        fuelLevelElement.className = 'low-fuel';
-                    } else if (fuelLevel <= 30) {
-                        fuelLevelElement.className = 'medium-fuel';
-                    } else {
-                        fuelLevelElement.className = 'high-fuel';
-                    }
-                }
             }
 
-            function startJourney() {
-                if (!isJourneyActive) {
-                    journeyInterval = setInterval(fetchJourneyData, 5000);
-                    isJourneyActive = true;
-                }
-            }
+            function drawGauge() {
+                const data = google.visualization.arrayToDataTable([
+                    ['Label', 'Value'],
+                    ['Fuel Level', parseFloat(fuelLevelElement.textContent) || 0]
+                ]);
 
-            function stopJourney() {
-                if (isJourneyActive) {
-                    clearInterval(journeyInterval);
-                    isJourneyActive = false;
-                }
-            }
-
-            function fetchJourneyData() {
-                fetch('/perjalanan/' + {{ $perjalanan->id }} + '/data')
-                    .then(response => response.json())
-                    .then(data => {
-                        const { lat, lng, persentase_bahan_bakar } = data;
-                        currentMarker.setLatLng([lat, lng]);
-                        map.setView([lat, lng]);
-
-                        // Update gauge
-                        const gaugeData = google.visualization.arrayToDataTable([
-                            ['Label', 'Value'],
-                            ['Fuel Level', persentase_bahan_bakar]
-                        ]);
-                        drawGauge(gaugeData);
-                    });
-            }
-
-            function drawGauge(data) {
                 const options = {
                     width: 400,
                     height: 120,
@@ -269,8 +212,110 @@
                     minorTicks: 5
                 };
 
-                const chart = new google.visualization.Gauge(document.getElementById('gauge_chart'));
+                const chart = new google.visualization.Gauge(gaugeChartElement);
                 chart.draw(data, options);
+
+                // Fetch and update gauge every 2 seconds
+                setInterval(() => {
+                    fetch('/detail-perjalanan/latest/{{ $perjalanan->id }}')
+                        .then(response => response.json())
+                        .then(data => {
+                            const fuelLevel = data.persentase_bahan_bakar;
+                            fuelLevelElement.textContent = fuelLevel;
+
+                            // Set color based on fuel level
+                            setFuelLevelColor(fuelLevel);
+
+                            // Update gauge
+                            data.setValue(0, 1, fuelLevel);
+                            chart.draw(data, options);
+                        });
+                }, 2000);
+            }
+
+            function startJourney() {
+                if (!isJourneyActive) {
+                    isJourneyActive = true;
+                    journeyInterval = setInterval(fetchLatestJourneyData, 2000);
+                    // Clear previous route and polyline if any
+                    if (polyline) {
+                        map.removeLayer(polyline);
+                        polyline = null;
+                    }
+                    if (routingControl) {
+                        map.removeControl(routingControl);
+                        routingControl = null;
+                    }
+                }
+            }
+
+            function stopJourney() {
+                isJourneyActive = false;
+                clearInterval(journeyInterval);
+
+                // Display the route and polyline when journey is stopped
+                if (routeCoords.length > 1) {
+                    polyline = L.polyline(routeCoords, {
+                        color: 'blue'
+                    }).addTo(map);
+                    routingControl = L.Routing.control({
+                        waypoints: routeCoords.map(coord => L.latLng(coord[0], coord[1])),
+                        routeWhileDragging: true
+                    }).addTo(map);
+                }
+            }
+
+            function fetchLatestJourneyData() {
+                fetch('/detail-perjalanan/latest/{{ $perjalanan->id }}')
+                    .then(response => response.json())
+                    .then(data => {
+                        const {
+                            lat,
+                            lng,
+                            persentase_bahan_bakar,
+                            traffic_condition
+                        } = data;
+
+                        // Update fuel level
+                        fuelLevelElement.textContent = persentase_bahan_bakar;
+                        setFuelLevelColor(persentase_bahan_bakar);
+
+                        // Update gauge
+                        const gaugeData = google.visualization.arrayToDataTable([
+                            ['Label', 'Value'],
+                            ['Fuel Level', persentase_bahan_bakar]
+                        ]);
+                        const chart = new google.visualization.Gauge(gaugeChartElement);
+                        chart.draw(gaugeData, options);
+
+                        // Update truck marker position and icon based on traffic condition
+                        if (currentMarker) {
+                            map.removeLayer(currentMarker);
+                        }
+                        currentMarker = L.marker([lat, lng], {
+                            icon: L.divIcon({
+                                className: 'custom-div-icon',
+                                html: icons[traffic_condition] || icons
+                                .light, // Update icon based on traffic condition
+                                iconSize: [30, 42],
+                                iconAnchor: [15, 42]
+                            })
+                        }).addTo(map);
+
+                        // Add the new coordinates to the route
+                        routeCoords.push([lat, lng]);
+                    });
+            }
+
+            function setFuelLevelColor(level) {
+                const textSection = document.querySelector('.text-section');
+                if (level <= 10) {
+                    textSection.style.color = 'red';
+                } else if (level <= 30) {
+                    textSection.style.color = 'yellow';
+                } else {
+                    textSection.style.color = 'green';
+                }
             }
 
             window.onload = initMap;
