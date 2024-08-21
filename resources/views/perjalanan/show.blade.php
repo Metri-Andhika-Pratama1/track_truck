@@ -173,6 +173,9 @@
                     })
                 }).addTo(map);
 
+                polylineLatLngs.push([latAwal, lngAwal]);
+                polyline = L.polyline(polylineLatLngs, { color: 'blue' }).addTo(map);
+
                 google.charts.load('current', { packages: ['gauge'] });
                 google.charts.setOnLoadCallback(drawGauge);
 
@@ -211,71 +214,59 @@
                                 // Update gauge
                                 const gaugeData = google.visualization.arrayToDataTable([
                                     ['Label', 'Value'],
-                                    ['Fuel Level', fuelLevel]
+                                    ['Fuel Level', parseFloat(fuelLevel) || 0]
                                 ]);
                                 chart.draw(gaugeData, options);
-                            })
-                            .catch(error => console.error('Error fetching data:', error));
-                    }, 5000);
+                            });
+                    }, 5000); // Update every 5 seconds
                 }
-            }
 
-            function setFuelLevelColor(fuelLevel) {
-                const gaugeChart = document.getElementById('gauge_chart');
-                if (fuelLevel <= 10) {
-                    gaugeChart.style.backgroundColor = 'red';
-                } else if (fuelLevel <= 30) {
-                    gaugeChart.style.backgroundColor = 'yellow';
-                } else {
-                    gaugeChart.style.backgroundColor = 'green';
+                function setFuelLevelColor(fuelLevel) {
+                    const chart = document.querySelector('#gauge_chart .google-visualization-gauge');
+                    if (fuelLevel < 10) {
+                        chart.style.backgroundColor = 'red';
+                    } else if (fuelLevel < 30) {
+                        chart.style.backgroundColor = 'yellow';
+                    } else {
+                        chart.style.backgroundColor = 'green';
+                    }
                 }
             }
 
             function startJourney() {
-                if (isJourneyActive) return;
-
-                isJourneyActive = true;
-                journeyInterval = setInterval(updateJourney, 5000);
+                if (!isJourneyActive) {
+                    isJourneyActive = true;
+                    journeyInterval = setInterval(fetchJourneyUpdates, 5000);
+                }
             }
 
             function stopJourney() {
-                if (!isJourneyActive) return;
-
-                isJourneyActive = false;
-                clearInterval(journeyInterval);
+                if (isJourneyActive) {
+                    isJourneyActive = false;
+                    clearInterval(journeyInterval);
+                }
             }
 
-            function updateJourney() {
-                fetch('/update-journey-data')
+            function fetchJourneyUpdates() {
+                fetch('/detail-perjalanan/{{ $perjalanan->id }}')
                     .then(response => response.json())
                     .then(data => {
-                        const { latitude, longitude } = data;
+                        const { latitude, longitude, fuelLevel } = data;
 
-                        if (currentMarker) {
-                            map.removeLayer(currentMarker);
-                        }
+                        // Update marker position
+                        currentMarker.setLatLng([latitude, longitude]);
 
-                        currentMarker = L.marker([latitude, longitude], {
-                            icon: L.divIcon({
-                                className: 'custom-div-icon',
-                                html: '<i class="fas fa-truck" style="font-size: 38px; color: green;"></i>',
-                                iconSize: [30, 42],
-                                iconAnchor: [15, 42]
-                            })
-                        }).addTo(map);
-
-                        // Add new point to polyline
+                        // Update polyline
                         polylineLatLngs.push([latitude, longitude]);
-                        if (polyline) {
-                            map.removeLayer(polyline);
-                        }
-                        polyline = L.polyline(polylineLatLngs, { color: 'blue' }).addTo(map);
+                        polyline.setLatLngs(polylineLatLngs);
 
-                        map.fitBounds(polyline.getBounds());
-                    })
-                    .catch(error => console.error('Error updating journey:', error));
+                        // Update gauge
+                        fuelLevelElement.textContent = fuelLevel;
+                        drawGauge(); // Redraw gauge with updated fuel level
+                    });
             }
 
             document.addEventListener('DOMContentLoaded', initMap);
         </script>
-    @endsection
+    </div>
+@endsection
