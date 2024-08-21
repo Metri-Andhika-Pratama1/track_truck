@@ -42,6 +42,9 @@ Route::get('/perjalanan/{id}', [PerjalananController::class, 'show'])->name('per
 // Route untuk mendapatkan data real-time perjalanan
 Route::post('/perjalanan/update/{id}', [PerjalananController::class, 'updateRealTimeData'])->name('perjalanan.updateRealTimeData');
 
+Route::get('/perjalanan/{id}/real-time-location', [PerjalananController::class, 'getRealTimeLocation']);
+Route::get('/perjalanan/{id}/real-time-fuel-level', [PerjalananController::class, 'getRealTimeFuelLevel']);
+
 // Middleware auth untuk grup rute yang memerlukan autentikasi
 Route::middleware(['auth'])->group(function () { 
     Route::resource('details', DetailPerjalananController::class);

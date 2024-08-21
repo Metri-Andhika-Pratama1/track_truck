@@ -126,9 +126,15 @@
             let currentMarker;
             let routePolyline;
             let isJourneyActive = false;
+            let locationUpdateInterval;
+            const routePoints = [];
+            const pollingInterval = 5000; // 5 detik untuk polling
 
-            const mapElement = document.getElementById('map');
-            const fuelLevelElement = document.getElementById('fuel-level');
+            document.addEventListener('DOMContentLoaded', () => {
+                initMap();
+                updateFuelGauge();
+                updateRoute();
+            });
 
             function initMap() {
                 const latAwal = {{ $lat_awal ?? $perjalanan->lat_berangkat }};
@@ -136,7 +142,7 @@
                 const latTujuan = {{ $perjalanan->lat_tujuan }};
                 const lngTujuan = {{ $perjalanan->lng_tujuan }};
 
-                map = L.map(mapElement).setView([latAwal, lngAwal], 13);
+                map = L.map('map').setView([latAwal, lngAwal], 13);
 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
@@ -183,86 +189,86 @@
 
                 google.charts.load('current', { packages: ['gauge'] });
                 google.charts.setOnLoadCallback(drawGauge);
+            }
 
-                function drawGauge() {
-                    const data = google.visualization.arrayToDataTable([
-                        ['Label', 'Value'],
-                        ['Fuel Level', parseFloat(fuelLevelElement.textContent) || 0]
-                    ]);
+            function drawGauge() {
+                const fuelLevel = parseFloat(document.getElementById('fuel-level').textContent) || 0;
 
-                    const options = {
-                        width: 400,
-                        height: 120,
-                        redFrom: 0,
-                        redTo: 10,
-                        yellowFrom: 10,
-                        yellowTo: 30,
-                        greenFrom: 30,
-                        greenTo: 100,
-                        minorTicks: 5
-                    };
+                const data = google.visualization.arrayToDataTable([
+                    ['Label', 'Value'],
+                    ['Fuel Level', fuelLevel]
+                ]);
 
-                    const chart = new google.visualization.Gauge(document.getElementById('gauge_chart'));
-                    chart.draw(data, options);
+                const options = {
+                    width: 400,
+                    height: 120,
+                    redFrom: 0,
+                    redTo: 10,
+                    yellowFrom: 10,
+                    yellowTo: 30,
+                    greenFrom: 30,
+                    greenTo: 100,
+                    minorTicks: 5
+                };
 
-                    setFuelLevelColor(parseFloat(fuelLevelElement.textContent) || 0);
+                const chart = new google.visualization.Gauge(document.getElementById('gauge_chart'));
+                chart.draw(data, options);
 
-                    setInterval(() => {
-                        fetch('/api/fuel-level')
-                            .then(response => response.json())
-                            .then(data => {
-                                fuelLevelElement.textContent = data.fuelLevel;
-                                drawGauge();
-                            });
-                    }, 5000);
-                }
+                setInterval(() => {
+                    fetch('/api/fuel-level')
+                        .then(response => response.json())
+                        .then(data => {
+                            const newFuelLevel = parseFloat(data.fuelLevel) || 0;
+                            document.getElementById('fuel-level').textContent = newFuelLevel;
+                            const newData = google.visualization.arrayToDataTable([
+                                ['Label', 'Value'],
+                                ['Fuel Level', newFuelLevel]
+                            ]);
+                            chart.draw(newData, options);
+                        });
+                }, pollingInterval);
+            }
 
-                function setFuelLevelColor(value) {
-                    if (value < 10) {
-                        fuelLevelElement.style.color = 'red';
-                    } else if (value < 30) {
-                        fuelLevelElement.style.color = 'orange';
-                    } else {
-                        fuelLevelElement.style.color = 'green';
-                    }
-                }
+            function updateRoute() {
+                fetch(`/api/real-time-data/{{ $perjalanan->id }}?timestamp=${new Date().getTime()}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const points = data.map(point => [point.lat, point.lng]);
+                        if (points.length) {
+                            routePoints.push(...points);
+                            routePolyline.setLatLngs(routePoints);
+                            map.fitBounds(routePolyline.getBounds());
+                            if (isJourneyActive) {
+                                currentMarker.setLatLng(points[points.length - 1]);
+                            }
+                        }
+                    });
+
+                setInterval(updateRoute, pollingInterval);
             }
 
             function startJourney() {
-                if (!isJourneyActive) {
-                    isJourneyActive = true;
-                    setInterval(updateCurrentLocation, 5000); // Update location every 5 seconds
-                }
+                isJourneyActive = true;
+                currentMarker.setLatLng([{{ $lat_awal ?? $perjalanan->lat_berangkat }}, {{ $lng_awal ?? $perjalanan->lng_berangkat }}]);
+                updateRoute();
             }
 
             function stopJourney() {
                 isJourneyActive = false;
-                routePolyline.setLatLngs([]); // Clear the polyline
+                // You can add additional logic here if needed when journey stops
             }
 
-            function updateCurrentLocation() {
-                fetch('/api/current-location')
+            function updateFuelGauge() {
+                fetch('/api/fuel-level')
                     .then(response => response.json())
                     .then(data => {
-                        if (isJourneyActive) {
-                            const { latitude, longitude } = data;
-                            const latLng = [latitude, longitude];
-                            currentMarker.setLatLng(latLng);
-
-                            if (routePolyline.getLatLngs().length === 0) {
-                                routePolyline.setLatLngs([latLng]);
-                            } else {
-                                const newLatLngs = routePolyline.getLatLngs();
-                                newLatLngs.push(latLng);
-                                routePolyline.setLatLngs(newLatLngs);
-                            }
-
-                            map.setView(latLng, 13); // Center the map on the current location
-                        }
+                        const fuelLevel = parseFloat(data.fuelLevel) || 0;
+                        document.getElementById('fuel-level').textContent = fuelLevel;
+                        drawGauge();
                     });
-            }
 
-            document.addEventListener('DOMContentLoaded', initMap);
+                setInterval(updateFuelGauge, pollingInterval);
+            }
         </script>
     </div>
 @endsection

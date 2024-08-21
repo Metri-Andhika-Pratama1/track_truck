@@ -14,7 +14,7 @@ class PerjalananController extends Controller
     // Metode untuk menampilkan daftar perjalanan
     public function index()
     {
-        $perjalanans = Perjalanan::paginate(10);
+        $perjalanans = Perjalanan::with(['supir', 'truk', 'gudang'])->paginate(10);
         return view('perjalanan.index', compact('perjalanans'));
     }
 
@@ -52,9 +52,9 @@ class PerjalananController extends Controller
     // Metode untuk menampilkan detail perjalanan
     public function show($id)
     {
-        $perjalanan = Perjalanan::findOrFail($id);
+        $perjalanan = Perjalanan::with(['supir', 'truk', 'gudang'])->findOrFail($id);
 
-        // Ambil data bahan bakar terakhir dari detail perjalanan
+        // Ambil data bahan bakar dan lokasi terakhir dari detail perjalanan
         $latestDetail = $perjalanan->detail_perjalanans()->latest()->first();
         $lat_berangkat = $latestDetail ? $latestDetail->lat : $perjalanan->lat_berangkat;
         $lng_berangkat = $latestDetail ? $latestDetail->lng : $perjalanan->lng_berangkat;
@@ -112,11 +112,11 @@ class PerjalananController extends Controller
         return redirect()->route('perjalanan.index')->with('success', 'Perjalanan berhasil dihapus.');
     }
 
-    // Metode untuk mendapatkan data terbaru dari DetailPerjalanan
+    // Metode untuk mendapatkan data real-time dari DetailPerjalanan
     public function getRealTimeData($id)
     {
         try {
-            $perjalanan = Perjalanan::findOrFail($id);
+            $perjalanan = Perjalanan::with(['supir', 'truk', 'gudang'])->findOrFail($id);
 
             $latestDetail = DetailPerjalanan::where('perjalanan_id', $id)
                 ->orderBy('id', 'desc')
@@ -181,6 +181,37 @@ class PerjalananController extends Controller
             }
 
             return response()->json(['error' => 'Data tidak ditemukan'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+        }
+    }
+
+    // Metode untuk mendapatkan data lokasi saat ini
+    public function getCurrentLocation()
+    {
+        try {
+            // Implementasikan logika untuk mengambil data lokasi real-time
+            // Misalnya, dari database atau layanan eksternal
+            $currentLocation = [
+                'latitude' => 0, // Ganti dengan latitude yang sebenarnya
+                'longitude' => 0 // Ganti dengan longitude yang sebenarnya
+            ];
+
+            return response()->json($currentLocation);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+        }
+    }
+
+    // Metode untuk mendapatkan data level bahan bakar
+    public function getFuelLevel()
+    {
+        try {
+            // Implementasikan logika untuk mengambil level bahan bakar terbaru
+            // Misalnya, dari database atau layanan eksternal
+            $fuelLevel = 100; // Ganti dengan level bahan bakar yang sebenarnya
+
+            return response()->json(['fuelLevel' => $fuelLevel]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
         }

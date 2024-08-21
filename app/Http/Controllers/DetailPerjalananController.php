@@ -142,6 +142,59 @@ class DetailPerjalananController extends Controller
 
         return redirect()->route('details.index')->with('success', 'Detail perjalanan berhasil dihapus.');
     }
+    // Di dalam DetailPerjalananController atau PerjalananController
+ /**
+     * Get real-time location data for a specific Perjalanan
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getRealTimeLocation($id)
+    {
+        // Retrieve the latest DetailPerjalanan for the specified perjalanan ID
+        $detail = DetailPerjalanan::where('perjalanan_id', $id)->latest()->first();
+
+        // Check if detail data exists
+        if ($detail) {
+            return response()->json([
+                'latitude' => $detail->lat,
+                'longitude' => $detail->lng,
+            ]);
+        }
+
+        // If no data is found, return a default response
+        return response()->json([
+            'latitude' => null,
+            'longitude' => null,
+            'message' => 'Location data not available'
+        ], 404);
+    }
+
+    /**
+     * Get real-time fuel level for a specific Perjalanan
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getRealTimeFuelLevel($id)
+    {
+        // Retrieve the latest DetailPerjalanan for the specified perjalanan ID
+        $detail = DetailPerjalanan::where('perjalanan_id', $id)->latest()->first();
+
+        // Check if detail data exists
+        if ($detail) {
+            return response()->json([
+                'fuelLevel' => $detail->minyak,
+            ]);
+        }
+
+        // If no data is found, return a default response
+        return response()->json([
+            'fuelLevel' => null,
+            'message' => 'Fuel level data not available'
+        ], 404);
+    }
+
 
     public function getLatestByPerjalananId($perjalananId)
     {
