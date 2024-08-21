@@ -118,18 +118,20 @@
 
         <!-- External Resources -->
         <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
         <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+        <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="https://www.gstatic.com/charts/loader.js"></script>
 
         <!-- JavaScript -->
         <script>
             let map;
-            let journeyInterval;
+            let routingControl;
             let currentMarker;
-            let polyline;
-            let polylineLatLngs = [];
             let isJourneyActive = false;
+            let routePolyline;
+            
             const mapElement = document.getElementById('map');
             const fuelLevelElement = document.getElementById('fuel-level');
 
@@ -173,8 +175,16 @@
                     })
                 }).addTo(map);
 
-                polylineLatLngs.push([latAwal, lngAwal]);
-                polyline = L.polyline(polylineLatLngs, { color: 'blue' }).addTo(map);
+                routingControl = L.Routing.control({
+                    waypoints: [
+                        L.latLng(latAwal, lngAwal),
+                        L.latLng(latTujuan, lngTujuan)
+                    ],
+                    routeWhileDragging: true,
+                    createMarker: function() { return null; }
+                }).addTo(map);
+
+                routePolyline = routingControl.getPlan().getWaypoints();
 
                 google.charts.load('current', { packages: ['gauge'] });
                 google.charts.setOnLoadCallback(drawGauge);
@@ -200,35 +210,31 @@
                     const chart = new google.visualization.Gauge(document.getElementById('gauge_chart'));
                     chart.draw(data, options);
 
-                    // Fetch and update gauge every 5 seconds
+                    setFuelLevelColor(parseFloat(fuelLevelElement.textContent) || 0);
+
                     setInterval(() => {
-                        fetch('/detail-perjalanan/{{ $perjalanan->id }}')
+                        fetch('/api/fuel-level')
                             .then(response => response.json())
                             .then(data => {
-                                const fuelLevel = data.persentase_bahan_bakar;
-                                fuelLevelElement.textContent = fuelLevel;
-
-                                // Set color based on fuel level
-                                setFuelLevelColor(fuelLevel);
-
-                                // Update gauge
+                                const fuelLevel = data.fuel_level;
                                 const gaugeData = google.visualization.arrayToDataTable([
                                     ['Label', 'Value'],
-                                    ['Fuel Level', parseFloat(fuelLevel) || 0]
+                                    ['Fuel Level', fuelLevel]
                                 ]);
+
                                 chart.draw(gaugeData, options);
+                                setFuelLevelColor(fuelLevel);
                             });
-                    }, 5000); // Update every 5 seconds
+                    }, 5000);
                 }
 
-                function setFuelLevelColor(fuelLevel) {
-                    const chart = document.querySelector('#gauge_chart .google-visualization-gauge');
-                    if (fuelLevel < 10) {
-                        chart.style.backgroundColor = 'red';
-                    } else if (fuelLevel < 30) {
-                        chart.style.backgroundColor = 'yellow';
+                function setFuelLevelColor(value) {
+                    if (value < 10) {
+                        fuelLevelElement.style.color = 'red';
+                    } else if (value < 30) {
+                        fuelLevelElement.style.color = 'yellow';
                     } else {
-                        chart.style.backgroundColor = 'green';
+                        fuelLevelElement.style.color = 'green';
                     }
                 }
             }
@@ -236,37 +242,41 @@
             function startJourney() {
                 if (!isJourneyActive) {
                     isJourneyActive = true;
-                    journeyInterval = setInterval(fetchJourneyUpdates, 5000);
+                    routePolyline.clearLayers();
+                    routingControl.getPlan().setWaypoints([
+                        L.latLng({{ $lat_awal ?? $perjalanan->lat_berangkat }}, {{ $lng_awal ?? $perjalanan->lng_berangkat }}),
+                        L.latLng({{ $perjalanan->lat_tujuan }}, {{ $perjalanan->lng_tujuan }})
+                    ]);
+
+                    setInterval(() => {
+                        fetch('/api/current-location')
+                            .then(response => response.json())
+                            .then(data => {
+                                const lat = data.latitude;
+                                const lng = data.longitude;
+
+                                if (lat && lng) {
+                                    currentMarker.setLatLng([lat, lng]);
+                                    map.setView([lat, lng]);
+
+                                    if (routePolyline) {
+                                        routePolyline.addLatLng([lat, lng]);
+                                    }
+                                }
+                            });
+                    }, 5000);
                 }
             }
 
             function stopJourney() {
-                if (isJourneyActive) {
-                    isJourneyActive = false;
-                    clearInterval(journeyInterval);
+                isJourneyActive = false;
+                if (routePolyline) {
+                    routePolyline.setLatLngs([]);
                 }
             }
 
-            function fetchJourneyUpdates() {
-                fetch('/detail-perjalanan/{{ $perjalanan->id }}')
-                    .then(response => response.json())
-                    .then(data => {
-                        const { latitude, longitude, fuelLevel } = data;
-
-                        // Update marker position
-                        currentMarker.setLatLng([latitude, longitude]);
-
-                        // Update polyline
-                        polylineLatLngs.push([latitude, longitude]);
-                        polyline.setLatLngs(polylineLatLngs);
-
-                        // Update gauge
-                        fuelLevelElement.textContent = fuelLevel;
-                        drawGauge(); // Redraw gauge with updated fuel level
-                    });
-            }
-
-            document.addEventListener('DOMContentLoaded', initMap);
+            document.addEventListener('DOMContentLoaded', () => {
+                initMap();
+            });
         </script>
-    </div>
 @endsection
