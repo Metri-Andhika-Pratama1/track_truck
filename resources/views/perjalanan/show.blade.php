@@ -16,7 +16,7 @@
                         </ol>
                     </div>
                 </div>
-                <!-- Tombol Cetak -->
+                <!-- Print Button -->
                 <button onclick="window.print();" class="btn btn-success">Cetak</button>
             </div>
         </div>
@@ -49,8 +49,7 @@
                                     </div>
                                     <div class="col-md-6">
                                         <h5>Titik Berangkat:</h5>
-                                        <p>Lat: {{ $lat_awal ?? $perjalanan->lat_berangkat }}, Lng:
-                                            {{ $lng_awal ?? $perjalanan->lng_berangkat }}</p>
+                                        <p>Lat: {{ $lat_awal ?? $perjalanan->lat_berangkat }}, Lng: {{ $lng_awal ?? $perjalanan->lng_berangkat }}</p>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
@@ -63,23 +62,20 @@
                                     <div class="col-md-6">
                                         <h5>Kondisi Bensin:</h5>
                                         <p>Bensin Awal: {{ $perjalanan->bensin_awal ?? 'Tidak Ada' }}%</p>
-                                        <p>Bensin Akhir: <span id="fuel-level">{{ $bensin_akhir ?? 'Tidak Ada' }}</span>%
-                                        </p>
+                                        <p>Bensin Akhir: <span id="fuel-level">{{ $bensin_akhir ?? 'Tidak Ada' }}</span>%</p>
                                     </div>
                                 </div>
                                 <div class="scroll-controls">
                                     <a href="{{ route('perjalanan.index') }}" class="btn btn-secondary">Kembali</a>
-                                    <button id="scroll-start" onclick="startJourney()" class="btn btn-primary">Start
-                                        Journey</button>
-                                    <button id="scroll-stop" onclick="stopJourney()" class="btn btn-danger">Stop
-                                        Journey</button>
+                                    <button id="scroll-start" onclick="startJourney()" class="btn btn-primary">Start Journey</button>
+                                    <button id="scroll-stop" onclick="stopJourney()" class="btn btn-danger">Stop Journey</button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Peta -->
+                <!-- Map -->
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -93,7 +89,7 @@
                     </div>
                 </div>
 
-                <!-- Bahan Bakar -->
+                <!-- Fuel Gauge -->
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
@@ -104,8 +100,7 @@
                                 </div>
                                 <div id="fuel-level-data" class="fuel-content">
                                     <div class="text-section" style="text-align: center">
-                                        <h5>Persentase: <span id="fuel-level">{{ $bensin_akhir ?? 'Tidak Ada' }}</span>%
-                                        </h5>
+                                        <h5>Persentase: <span id="fuel-level">{{ $bensin_akhir ?? 'Tidak Ada' }}</span>%</h5>
                                     </div>
                                 </div>
                             </div>
@@ -129,9 +124,9 @@
             let map;
             let routingControl;
             let currentMarker;
-            let isJourneyActive = false;
             let routePolyline;
-            
+            let isJourneyActive = false;
+
             const mapElement = document.getElementById('map');
             const fuelLevelElement = document.getElementById('fuel-level');
 
@@ -184,7 +179,7 @@
                     createMarker: function() { return null; }
                 }).addTo(map);
 
-                routePolyline = routingControl.getPlan().getWaypoints();
+                routePolyline = L.polyline([], { color: 'blue' }).addTo(map);
 
                 google.charts.load('current', { packages: ['gauge'] });
                 google.charts.setOnLoadCallback(drawGauge);
@@ -216,14 +211,8 @@
                         fetch('/api/fuel-level')
                             .then(response => response.json())
                             .then(data => {
-                                const fuelLevel = data.fuel_level;
-                                const gaugeData = google.visualization.arrayToDataTable([
-                                    ['Label', 'Value'],
-                                    ['Fuel Level', fuelLevel]
-                                ]);
-
-                                chart.draw(gaugeData, options);
-                                setFuelLevelColor(fuelLevel);
+                                fuelLevelElement.textContent = data.fuelLevel;
+                                drawGauge();
                             });
                     }, 5000);
                 }
@@ -232,7 +221,7 @@
                     if (value < 10) {
                         fuelLevelElement.style.color = 'red';
                     } else if (value < 30) {
-                        fuelLevelElement.style.color = 'yellow';
+                        fuelLevelElement.style.color = 'orange';
                     } else {
                         fuelLevelElement.style.color = 'green';
                     }
@@ -242,41 +231,38 @@
             function startJourney() {
                 if (!isJourneyActive) {
                     isJourneyActive = true;
-                    routePolyline.clearLayers();
-                    routingControl.getPlan().setWaypoints([
-                        L.latLng({{ $lat_awal ?? $perjalanan->lat_berangkat }}, {{ $lng_awal ?? $perjalanan->lng_berangkat }}),
-                        L.latLng({{ $perjalanan->lat_tujuan }}, {{ $perjalanan->lng_tujuan }})
-                    ]);
-
-                    setInterval(() => {
-                        fetch('/api/current-location')
-                            .then(response => response.json())
-                            .then(data => {
-                                const lat = data.latitude;
-                                const lng = data.longitude;
-
-                                if (lat && lng) {
-                                    currentMarker.setLatLng([lat, lng]);
-                                    map.setView([lat, lng]);
-
-                                    if (routePolyline) {
-                                        routePolyline.addLatLng([lat, lng]);
-                                    }
-                                }
-                            });
-                    }, 5000);
+                    setInterval(updateCurrentLocation, 5000); // Update location every 5 seconds
                 }
             }
 
             function stopJourney() {
                 isJourneyActive = false;
-                if (routePolyline) {
-                    routePolyline.setLatLngs([]);
-                }
+                routePolyline.setLatLngs([]); // Clear the polyline
             }
 
-            document.addEventListener('DOMContentLoaded', () => {
-                initMap();
-            });
+            function updateCurrentLocation() {
+                fetch('/api/current-location')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (isJourneyActive) {
+                            const { latitude, longitude } = data;
+                            const latLng = [latitude, longitude];
+                            currentMarker.setLatLng(latLng);
+
+                            if (routePolyline.getLatLngs().length === 0) {
+                                routePolyline.setLatLngs([latLng]);
+                            } else {
+                                const newLatLngs = routePolyline.getLatLngs();
+                                newLatLngs.push(latLng);
+                                routePolyline.setLatLngs(newLatLngs);
+                            }
+
+                            map.setView(latLng, 13); // Center the map on the current location
+                        }
+                    });
+            }
+
+            document.addEventListener('DOMContentLoaded', initMap);
         </script>
+    </div>
 @endsection
