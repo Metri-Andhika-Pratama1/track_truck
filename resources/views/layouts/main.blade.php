@@ -95,6 +95,7 @@
             max-height: 600px;
             border-radius: 8px;
             margin-bottom: 15px;
+            margin-left: 10px;
         }
 
         #gps-data,
@@ -155,10 +156,6 @@
             overflow: visible;
         }
 
-        #map {
-            margin-left: 10px;
-        }
-
         .form-border {
             position: relative;
             border: 2px solid #007bff;
@@ -198,6 +195,26 @@
 
         .high-fuel {
             color: green;
+        }
+
+        #world-map {
+            height: 400px;
+            width: 100%;
+            /* Tambahkan ini */
+        }
+
+        .gauge-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 120px;
+            /* Sesuaikan dengan tinggi gauge chart */
+        }
+
+        #fuel-level-data {
+            text-align: center;
+            margin-top: 10px;
+            /* Sesuaikan dengan kebutuhan */
         }
     </style>
 </head>

@@ -150,4 +150,39 @@ class PerjalananController extends Controller
             return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
         }
     }
+
+    // Metode untuk memperbarui data real-time perjalanan
+    public function updateRealTimeData(Request $request, $id)
+    {
+        try {
+            // Validasi data dari permintaan
+            $validated = $request->validate([
+                'lat' => 'required|numeric',
+                'lng' => 'required|numeric',
+                'minyak' => 'required|numeric',
+            ]);
+
+            // Temukan perjalanan berdasarkan ID
+            $perjalanan = Perjalanan::findOrFail($id);
+
+            // Ambil detail perjalanan terbaru dan perbarui data
+            $latestDetail = DetailPerjalanan::where('perjalanan_id', $id)
+                ->orderBy('id', 'desc')
+                ->first();
+
+            if ($latestDetail) {
+                $latestDetail->update($validated);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Data perjalanan berhasil diperbarui.',
+                    'detail_perjalanan' => $latestDetail
+                ]);
+            }
+
+            return response()->json(['error' => 'Data tidak ditemukan'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+        }
+    }
 }

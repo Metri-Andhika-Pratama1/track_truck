@@ -128,26 +128,25 @@
             let journeyInterval;
             let currentMarker;
             let polyline;
-            let routeCoordinates = [];
+            let polylineLatLngs = [];
             let isJourneyActive = false;
-            let previousLat = null;
-            let previousLng = null;
             const mapElement = document.getElementById('map');
             const fuelLevelElement = document.getElementById('fuel-level');
-        
+
             function initMap() {
-                map = L.map(mapElement).setView([{{ $lat_awal ?? $perjalanan->lat_berangkat }},
-                    {{ $lng_awal ?? $perjalanan->lng_berangkat }}
-                ], 13);
-        
+                const latAwal = {{ $lat_awal ?? $perjalanan->lat_berangkat }};
+                const lngAwal = {{ $lng_awal ?? $perjalanan->lng_berangkat }};
+                const latTujuan = {{ $perjalanan->lat_tujuan }};
+                const lngTujuan = {{ $perjalanan->lng_tujuan }};
+
+                map = L.map(mapElement).setView([latAwal, lngAwal], 13);
+
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 }).addTo(map);
-        
-                currentMarker = L.marker([{{ $lat_awal ?? $perjalanan->lat_berangkat }},
-                    {{ $lng_awal ?? $perjalanan->lng_berangkat }}
-                ], {
+
+                currentMarker = L.marker([latAwal, lngAwal], {
                     icon: L.divIcon({
                         className: 'custom-div-icon',
                         html: '<i class="fas fa-truck" style="font-size: 38px; color: green;"></i>',
@@ -155,9 +154,8 @@
                         iconAnchor: [15, 42]
                     })
                 }).addTo(map);
-        
-                // Add start and end markers
-                L.marker([{{ $perjalanan->lat_berangkat }}, {{ $perjalanan->lng_berangkat }}], {
+
+                L.marker([latAwal, lngAwal], {
                     icon: L.divIcon({
                         className: 'custom-div-icon',
                         html: '<i class="fas fa-map-marker-alt" style="font-size: 38px; color: blue;"></i>',
@@ -165,8 +163,8 @@
                         iconAnchor: [15, 42]
                     })
                 }).addTo(map);
-        
-                L.marker([{{ $perjalanan->lat_tujuan }}, {{ $perjalanan->lng_tujuan }}], {
+
+                L.marker([latTujuan, lngTujuan], {
                     icon: L.divIcon({
                         className: 'custom-div-icon',
                         html: '<i class="fas fa-flag-checkered" style="font-size: 30px; color: red;"></i>',
@@ -174,21 +172,16 @@
                         iconAnchor: [15, 42]
                     })
                 }).addTo(map);
-        
-                // Initialize polyline
-                polyline = L.polyline([], { color: 'blue' }).addTo(map);
-        
-                google.charts.load('current', {
-                    'packages': ['gauge']
-                });
+
+                google.charts.load('current', { packages: ['gauge'] });
                 google.charts.setOnLoadCallback(drawGauge);
-        
+
                 function drawGauge() {
                     const data = google.visualization.arrayToDataTable([
                         ['Label', 'Value'],
                         ['Fuel Level', parseFloat(fuelLevelElement.textContent) || 0]
                     ]);
-        
+
                     const options = {
                         width: 400,
                         height: 120,
@@ -200,86 +193,89 @@
                         greenTo: 100,
                         minorTicks: 5
                     };
-        
+
                     const chart = new google.visualization.Gauge(document.getElementById('gauge_chart'));
                     chart.draw(data, options);
-        
+
                     // Fetch and update gauge every 5 seconds
                     setInterval(() => {
-                        fetch(`/detail-perjalanan/{{ $perjalanan->id }}`)
+                        fetch('/detail-perjalanan/{{ $perjalanan->id }}')
                             .then(response => response.json())
                             .then(data => {
                                 const fuelLevel = data.persentase_bahan_bakar;
                                 fuelLevelElement.textContent = fuelLevel;
-        
+
                                 // Set color based on fuel level
                                 setFuelLevelColor(fuelLevel);
-        
+
                                 // Update gauge
-                                data.setValue(0, 1, fuelLevel);
-                                chart.draw(data, options);
-                            });
+                                const gaugeData = google.visualization.arrayToDataTable([
+                                    ['Label', 'Value'],
+                                    ['Fuel Level', fuelLevel]
+                                ]);
+                                chart.draw(gaugeData, options);
+                            })
+                            .catch(error => console.error('Error fetching data:', error));
                     }, 5000);
                 }
             }
-        
+
+            function setFuelLevelColor(fuelLevel) {
+                const gaugeChart = document.getElementById('gauge_chart');
+                if (fuelLevel <= 10) {
+                    gaugeChart.style.backgroundColor = 'red';
+                } else if (fuelLevel <= 30) {
+                    gaugeChart.style.backgroundColor = 'yellow';
+                } else {
+                    gaugeChart.style.backgroundColor = 'green';
+                }
+            }
+
             function startJourney() {
-                if (!isJourneyActive) {
-                    isJourneyActive = true;
-                    journeyInterval = setInterval(updateJourneyData, 5000);
-                }
+                if (isJourneyActive) return;
+
+                isJourneyActive = true;
+                journeyInterval = setInterval(updateJourney, 5000);
             }
-        
+
             function stopJourney() {
-                if (isJourneyActive) {
-                    clearInterval(journeyInterval);
-                    journeyInterval = null;
-                    isJourneyActive = false;
-        
-                    // Display route when journey stops
-                    polyline.setLatLngs(routeCoordinates);
-                    map.fitBounds(polyline.getBounds());
-                }
+                if (!isJourneyActive) return;
+
+                isJourneyActive = false;
+                clearInterval(journeyInterval);
             }
-        
-            async function updateJourneyData() {
-                const response = await fetch(`/detail-perjalanan/{{ $perjalanan->id }}`);
-                const data = await response.json();
-                const { lat, lng, persentase_bahan_bakar } = data;
-        
-                // Calculate angle to rotate the marker
-                if (previousLat && previousLng) {
-                    const bearing = calculateBearing(previousLat, previousLng, lat, lng);
-                    currentMarker.setRotationAngle(bearing);
-                }
-        
-                // Update previous coordinates
-                previousLat = lat;
-                previousLng = lng;
-        
-                // Update marker position and polyline
-                const newLatLng = L.latLng(lat, lng);
-                currentMarker.setLatLng(newLatLng);
-                routeCoordinates.push(newLatLng);
-        
-                // Update fuel level
-                fuelLevelElement.textContent = persentase_bahan_bakar;
+
+            function updateJourney() {
+                fetch('/update-journey-data')
+                    .then(response => response.json())
+                    .then(data => {
+                        const { latitude, longitude } = data;
+
+                        if (currentMarker) {
+                            map.removeLayer(currentMarker);
+                        }
+
+                        currentMarker = L.marker([latitude, longitude], {
+                            icon: L.divIcon({
+                                className: 'custom-div-icon',
+                                html: '<i class="fas fa-truck" style="font-size: 38px; color: green;"></i>',
+                                iconSize: [30, 42],
+                                iconAnchor: [15, 42]
+                            })
+                        }).addTo(map);
+
+                        // Add new point to polyline
+                        polylineLatLngs.push([latitude, longitude]);
+                        if (polyline) {
+                            map.removeLayer(polyline);
+                        }
+                        polyline = L.polyline(polylineLatLngs, { color: 'blue' }).addTo(map);
+
+                        map.fitBounds(polyline.getBounds());
+                    })
+                    .catch(error => console.error('Error updating journey:', error));
             }
-        
-            // Function to calculate bearing between two points
-            function calculateBearing(lat1, lng1, lat2, lng2) {
-                const radLat1 = lat1 * (Math.PI / 180);
-                const radLat2 = lat2 * (Math.PI / 180);
-                const deltaLng = (lng2 - lng1) * (Math.PI / 180);
-        
-                const y = Math.sin(deltaLng) * Math.cos(radLat2);
-                const x = Math.cos(radLat1) * Math.sin(radLat2) - Math.sin(radLat1) * Math.cos(radLat2) * Math.cos(deltaLng);
-        
-                const bearing = Math.atan2(y, x) * (180 / Math.PI);
-                return (bearing + 360) % 360;
-            }
-        
-            initMap();
+
+            document.addEventListener('DOMContentLoaded', initMap);
         </script>
-    </div>
-@endsection
+    @endsection
