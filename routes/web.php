@@ -44,6 +44,7 @@ Route::post('/perjalanan/update/{id}', [PerjalananController::class, 'updateReal
 
 Route::get('/perjalanan/{id}/real-time-location', [PerjalananController::class, 'getRealTimeLocation']);
 Route::get('/perjalanan/{id}/real-time-fuel-level', [PerjalananController::class, 'getRealTimeFuelLevel']);
+Route::get('/perjalanan/{id}/real-time-data', [PerjalananController::class, 'getRealTimeData']);
 
 // Middleware auth untuk grup rute yang memerlukan autentikasi
 Route::middleware(['auth'])->group(function () { 

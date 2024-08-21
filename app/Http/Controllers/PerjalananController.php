@@ -165,53 +165,19 @@ class PerjalananController extends Controller
             // Temukan perjalanan berdasarkan ID
             $perjalanan = Perjalanan::findOrFail($id);
 
-            // Ambil detail perjalanan terbaru dan perbarui data
-            $latestDetail = DetailPerjalanan::where('perjalanan_id', $id)
-                ->orderBy('id', 'desc')
-                ->first();
+            // Tambah detail perjalanan baru
+            $latestDetail = DetailPerjalanan::create([
+                'perjalanan_id' => $id,
+                'lat' => $validated['lat'],
+                'lng' => $validated['lng'],
+                'minyak' => $validated['minyak'],
+            ]);
 
-            if ($latestDetail) {
-                $latestDetail->update($validated);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Data perjalanan berhasil diperbarui.',
-                    'detail_perjalanan' => $latestDetail
-                ]);
-            }
-
-            return response()->json(['error' => 'Data tidak ditemukan'], 404);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
-        }
-    }
-
-    // Metode untuk mendapatkan data lokasi saat ini
-    public function getCurrentLocation()
-    {
-        try {
-            // Implementasikan logika untuk mengambil data lokasi real-time
-            // Misalnya, dari database atau layanan eksternal
-            $currentLocation = [
-                'latitude' => 0, // Ganti dengan latitude yang sebenarnya
-                'longitude' => 0 // Ganti dengan longitude yang sebenarnya
-            ];
-
-            return response()->json($currentLocation);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
-        }
-    }
-
-    // Metode untuk mendapatkan data level bahan bakar
-    public function getFuelLevel()
-    {
-        try {
-            // Implementasikan logika untuk mengambil level bahan bakar terbaru
-            // Misalnya, dari database atau layanan eksternal
-            $fuelLevel = 100; // Ganti dengan level bahan bakar yang sebenarnya
-
-            return response()->json(['fuelLevel' => $fuelLevel]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Data perjalanan berhasil diperbarui.',
+                'detail_perjalanan' => $latestDetail
+            ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
         }
